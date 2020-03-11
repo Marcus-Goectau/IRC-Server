@@ -12,7 +12,7 @@ struct linked_list_node {
 	void *data;
 };
 
-void linked_list_add(struct linked_list_node **head, void *data);
+void linked_list_push(struct linked_list_node **head, void *data);
 
 struct linked_list_node* linked_list_next(struct linked_list_node *node);
 

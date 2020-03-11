@@ -66,13 +66,13 @@ int main(int argc, char *argv[]) {
 		printf("Enter your message: ");
 		bzero(buffer, 256);
 		fgets(buffer, 255, stdin);
-		conn_status = write(client_socket, buffer, strlen(buffer));
+		conn_status = fwrite(client_socket, buffer, strlen(buffer));
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not write to the remote socket");
 			exit(1);
 		}
 		bzero(buffer, 256);
-		conn_status = read(client_socket, buffer, 255);
+		conn_status = fread(client_socket, buffer, 255);
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not read from remote socket");
 			exit(1);

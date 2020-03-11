@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -71,13 +72,13 @@ void* communicate(void* arg) {
 	int new_client_socket = (int)arg;
 	while(1) {
 		bzero(buffer, 256);
-		conn_status = read(new_client_socket, buffer, 255);
+		conn_status = fread(new_client_socket, buffer, 255);
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not read from socket");
 			exit(1);
 		}
 		printf("Message from a client: %s\n", buffer);
-		conn_status = write(new_client_socket, "The server got your message\n", 255);
+		conn_status = fwrite(new_client_socket, "The server got your message\n", 255);
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not  write to socket");
 			exit(1);

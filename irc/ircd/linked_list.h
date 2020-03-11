@@ -7,17 +7,22 @@
  * Header file for linked_list data structure
 */
 
-struct linked_list_node {
-	struct linked_list_node *next;
+#ifndef IRCD_LINKED_LIST_H
+#define IRCD_LINKED_LIST_H
+
+struct LinkedListNode {
+	struct LinkedListNode *next;
 	void *data;
 };
 
-void linked_list_push(struct linked_list_node **head, void *data);
+void linked_list_push(struct LinkedListNode **head, void *data);
 
-struct linked_list_node* linked_list_next(struct linked_list_node *node);
+struct LinkedListNode* linked_list_next(struct LinkedListNode *node);
 
-struct linked_list_node* linked_list_get(struct linked_list_node *head, void *data);
+struct LinkedListNode* linked_list_get(struct LinkedListNode *head, void *data);
 
-void linked_list_delete(struct linked_list_node *head, struct linked_list_node *node);
+void linked_list_delete(struct LinkedListNode *head, struct LinkedListNode *node);
 
-int linked_list_size(struct linked_list_node *head);
+int linked_list_size(struct LinkedListNode *head);
+
+#endif //IRCD_LINKED_LIST_H

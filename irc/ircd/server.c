@@ -5,7 +5,8 @@
  * Professor McGregor
  * 2/21/2020
  *
- * Creates a TCP server socket that binds to an IP address and port to listen for connections
+ * Creates a TCP server socket that binds to an IP address and port 
+ * to listen for connections
 */
 
 #include <stdio.h>
@@ -34,7 +35,8 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	// define server address and declare a client address to be used when accpeting connections
+	// define server address and declare a client address to be used 
+	// when accpeting connections
 	struct sockaddr_in server_address, client_address;
 	bzero((char *) &server_address, sizeof(server_address));
 	server_address.sin_family = AF_INET;
@@ -49,7 +51,8 @@ int main(int argc, char *argv[]) {
 	int client_len = sizeof(client_address);
 	// infinite loop to continously accept connections	
 	while(1) {
-		// accept connections on the server socket and create new threads to deal with clients  
+		// accept connections on the server socket and create new threads 
+		// to deal with clients  
 		int new_client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_len);
 		if (new_client_socket < 0) {
 			fprintf(stderr, "ERROR: could not accept new connection");

@@ -22,7 +22,6 @@ struct Channel {
 };
 
 struct Channel* channel_create(char *name, char *topic);
-struct Channel* channel_remove(struct Channel *channel);
 
 struct LinkedListNode *channel_list_head;
 

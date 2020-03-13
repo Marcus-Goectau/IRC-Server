@@ -11,9 +11,25 @@
 #define IRCD_CLIENT_HANDLER_H
 
 #include <netinet/in.h>
+#include <sys/socket.h>
+#include "linked_list.h"
 
 struct Client {
-    
+    int client_fd;
+    struct hostent *server;
+    struct sockaddr_in *client_address;
+    socklen_t client_length;
+    int is_op; // boolean
+    char *nick;
+    char *full_name;
+    int processing; // boolean
 };
+
+struct Client* client_handler_getClientConnection(int server_socket, struct sockaddr_in *client_address, int client_address_len, char *nick, char *fullname);
+
+struct LinkedListNode *client_list_head; // List to hold all of the clients
+int client_handler_num_connections;
+int client_handler_num_processing;
+pthread_mutex_t client_handler_connections_mutex;
 
 #endif //IRCD_CLIENT_HANDLER_H

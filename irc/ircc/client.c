@@ -8,6 +8,7 @@
  * Creates a TCP  client socket to send and recieve data from another socket endpoint i.e. a server
 */
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,7 +42,6 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	
 	// specify an address and port for the socket to connect to
 	struct sockaddr_in server_address;
 	bzero((char *) &server_address, sizeof(server_address));
@@ -66,13 +66,13 @@ int main(int argc, char *argv[]) {
 		printf("Enter your message: ");
 		bzero(buffer, 256);
 		fgets(buffer, 255, stdin);
-		conn_status = fwrite(client_socket, buffer, strlen(buffer));
+		conn_status = write(client_socket, buffer, strlen(buffer));
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not write to the remote socket");
 			exit(1);
 		}
 		bzero(buffer, 256);
-		conn_status = fread(client_socket, buffer, 255);
+		conn_status = read(client_socket, buffer, 255);
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not read from remote socket");
 			exit(1);

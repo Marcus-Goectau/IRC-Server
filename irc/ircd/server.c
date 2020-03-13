@@ -9,14 +9,17 @@
  * to listen for connections
 */
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
-
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include "linked_list.h"
+#include "client_handler.h"
+#include "channel.h"
 
 void *communicate(void *);
 
@@ -50,17 +53,26 @@ int main(int argc, char *argv[]) {
 	// listen for connections
 	listen(server_socket, 5);
 	int client_len = sizeof(client_address);
-	// infinite loop to continously accept connections	
+	// infinite loop to continously accept connections
 	while(1) {
 		// accept connections on the server socket and create new threads 
-		// to deal with clients  
-		int new_client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_len);
-		if (new_client_socket < 0) {
+		// to deal with clients
+		char *nick = "Ted";
+		char *full_name = "Theodore";
+		struct Client *new_client = client_handler_getClientConnection(server_socket, (struct sockaddr *) &client_address, &client_len, nick, full_name);
+
+		//linked_list_push((struct LinkedListNode **) client_list_head, new_client);
+		//client_handler_num_connections = linked_list_size(client_list_head);
+
+		if (new_client->client_fd < 0) {
 			fprintf(stderr, "ERROR: could not accept new connection");
 			exit(1);
 		}
+		printf("New client name: %s\n", new_client->nick);
+		printf("New client fd: %d\n", new_client->client_fd);
+		printf("New client op status: %d\n\n", new_client->is_op);
 		pthread_t thread;
-		pthread_create(&thread, NULL, communicate, (void *)new_client_socket);
+		pthread_create(&thread, NULL, communicate, (void *)new_client->client_fd);
 	}
 	return 0;
 }
@@ -72,13 +84,13 @@ void* communicate(void* arg) {
 	int new_client_socket = (int)arg;
 	while(1) {
 		bzero(buffer, 256);
-		conn_status = fread(new_client_socket, buffer, 255);
+		conn_status = read(new_client_socket, buffer, 255);
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not read from socket");
 			exit(1);
 		}
 		printf("Message from a client: %s\n", buffer);
-		conn_status = fwrite(new_client_socket, "The server got your message\n", 255);
+		conn_status = write(new_client_socket, "The server got your message\n", 255);
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not  write to socket");
 			exit(1);

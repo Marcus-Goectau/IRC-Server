@@ -61,8 +61,15 @@ int main(int argc, char *argv[]) {
 		char *full_name = "Theodore";
 		struct Client *new_client = client_handler_getClientConnection(server_socket, (struct sockaddr *) &client_address, &client_len, nick, full_name);
 
-		//linked_list_push((struct LinkedListNode **) client_list_head, new_client);
-		//client_handler_num_connections = linked_list_size(client_list_head);
+		if (linked_list_size(client_list_head) == 0) {
+            client_list_head = (struct LinkedListNode*) malloc(sizeof(struct LinkedListNode));
+            client_list_head->data = new_client;
+            new_client->is_op = 1;
+		} else {
+            linked_list_push((struct LinkedListNode**)client_list_head, new_client);
+		}
+
+        client_handler_num_connections = linked_list_size(client_list_head);
 
 		if (new_client->client_fd < 0) {
 			fprintf(stderr, "ERROR: could not accept new connection");
@@ -70,12 +77,14 @@ int main(int argc, char *argv[]) {
 		}
 		printf("New client name: %s\n", new_client->nick);
 		printf("New client fd: %d\n", new_client->client_fd);
-		printf("New client op status: %d\n\n", new_client->is_op);
+		printf("New client op status: %d\n", new_client->is_op);
+		printf("Number of clients: %d\n\n", client_handler_num_connections);
 		pthread_t thread;
 		pthread_create(&thread, NULL, communicate, (void *)new_client->client_fd);
 	}
 	return 0;
 }
+
 
 // function to communicate with each client in their own thread
 void* communicate(void* arg) {

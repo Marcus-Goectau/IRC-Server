@@ -24,10 +24,6 @@ struct Client* client_handler_getClientConnection(int server_socket, struct sock
     new_client->client_length = (socklen_t) client_address_len;
     new_client->nick = nick_name;
     new_client->full_name = full_name;
-    if (linked_list_size(client_list_head) == 0) {
-        new_client ->is_op = 1;
-    }
-
 
     return new_client;
 

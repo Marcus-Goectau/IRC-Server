@@ -74,8 +74,8 @@ int linked_list_size(struct LinkedListNode *head) {
     struct LinkedListNode *currentNode = head;
     int size = 0;
     while (currentNode != NULL) {
-        size++;
         currentNode = currentNode->next;
+        size++;
     }
 
     return size;

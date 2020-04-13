@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <strings.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -53,18 +54,19 @@ int main(int argc, char *argv[]) {
 	// listen for connections
 	listen(server_socket, 5);
 	int client_len = sizeof(client_address);
-	// infinite loop to continously accept connections
+	// infinite loop to continuously accept connections
 	while(1) {
 		// accept connections on the server socket and create new threads 
 		// to deal with clients
-		char *nick = "Ted";
-		char *full_name = "Theodore";
-		struct Client *new_client = client_handler_getClientConnection(server_socket, (struct sockaddr *) &client_address, &client_len, nick, full_name);
+		struct Client *new_client = client_handler_getClientConnection(server_socket, (struct sockaddr *) &client_address, &client_len);
 
+		// Add new client to running list of clients
 		if (linked_list_size(client_list_head) == 0) {
             client_list_head = (struct LinkedListNode*) malloc(sizeof(struct LinkedListNode));
             client_list_head->data = new_client;
             new_client->is_op = 1;
+            new_client->nick = "Client 0";
+            new_client->full_name = "Client 0";
 		} else {
             linked_list_push((struct LinkedListNode**)client_list_head, new_client);
 		}
@@ -98,12 +100,22 @@ void* communicate(void* arg) {
 			fprintf(stderr, "ERROR: could not read from socket");
 			exit(1);
 		}
-		printf("Message from a client: %s\n", buffer);
-		conn_status = write(new_client_socket, "The server got your message\n", 255);
-		if (conn_status < 0) {
-			fprintf(stderr, "ERROR: could not  write to socket");
-			exit(1);
+		printf("Message from FD %d: %s\n", new_client_socket, buffer);
+		struct LinkedListNode *node = client_list_head;
+        struct Client *client;
+        // Loop through list of clients and broadcast received messages to all other clients
+        while(node != NULL) {
+		    client = node->data;
+		    if (client->client_fd != new_client_socket) {
+                conn_status = write(client->client_fd, &buffer, 255);
+		    }
+            if (conn_status < 0) {
+                fprintf(stderr, "ERROR: could not  write to socket");
+                exit(1);
+            }
+            node = node->next;
 		}
+		free(node);
 	}
 	return 0;
 }

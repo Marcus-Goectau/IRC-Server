@@ -25,7 +25,7 @@ struct Client {
     int processing; // boolean
 };
 
-struct Client* client_handler_getClientConnection(int server_socket, struct sockaddr_in *client_address, int client_address_len, char *nick, char *fullname);
+struct Client* client_handler_getClientConnection(int server_socket, struct sockaddr_in *client_address, int client_address_len);
 
 struct LinkedListNode *client_list_head; // List to hold all of the clients
 int client_handler_num_connections;

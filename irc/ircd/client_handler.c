@@ -8,6 +8,7 @@
 */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "client_handler.h"
 
 /// accepts a new client connection, adds the new client struct to the list of clients
@@ -15,17 +16,16 @@
 /// \param client_address: pointer to a sockaddr struct of the client address
 /// \param client_address_length: socklen_t representing the length of the client address
 /// \return: a newly created client struct
-struct Client* client_handler_getClientConnection(int server_socket, struct sockaddr_in *client_address, int client_address_len, char *nick_name, char *full_name) {
+struct Client* client_handler_getClientConnection(int server_socket, struct sockaddr_in *client_address, int client_address_len) {
     int client_fd = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
-
+    char client_name[256];
     struct Client *new_client = (struct Client*)malloc(sizeof(struct Client));
     new_client->client_fd = client_fd; // assigns values to client struct members
     new_client->client_address = (struct sockaddr_in *) client_address;
     new_client->client_length = (socklen_t) client_address_len;
-    new_client->nick = nick_name;
-    new_client->full_name = full_name;
+    sprintf(client_name, "Client %d", client_handler_num_connections);
+    new_client->nick = client_name;
+    new_client->full_name = client_name;
 
     return new_client;
-
-
 }

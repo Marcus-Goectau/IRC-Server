@@ -17,6 +17,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <pthread.h>
+#include "client_handler.h"
+
+void *listenForMessages(void *);
 
 int main(int argc, char *argv[]) {
 	
@@ -57,27 +61,38 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	
-	// buffer to hold messages between server and client
-	char buffer[256];
+	// buffer to hold messages from client to be sent to the server
+	char buffer_write[256];
 	int conn_status;
+    pthread_t thread;
+    pthread_create(&thread, NULL, listenForMessages, (void *)client_socket);
 
-	// communicate with server
+    printf("Welcome to the server! Begin chatting!\n");
+	// write to the server
 	while (1) {
-		printf("Enter your message: ");
-		bzero(buffer, 256);
-		fgets(buffer, 255, stdin);
-		conn_status = write(client_socket, buffer, strlen(buffer));
+		bzero(buffer_write, 256);
+		fgets(buffer_write, 255, stdin);
+		conn_status = write(client_socket, buffer_write, strlen(buffer_write));
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not write to the remote socket");
 			exit(1);
 		}
-		bzero(buffer, 256);
-		conn_status = read(client_socket, buffer, 255);
+	}
+	return 0;
+}
+
+// Function to listen for incoming messages in a separate thread
+void *listenForMessages(void* arg) {
+    char buffer_read[256];
+    int conn_status;
+    int client_socket = (int)arg;
+    while(1) {
+        bzero(buffer_read, 256);
+		conn_status = read(client_socket, buffer_read, 255);
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not read from remote socket");
 			exit(1);
 		}
-		printf("%s\n", buffer);
-	}
-	return 0;
+		printf("\n%s\n", buffer_read);
+    }
 }

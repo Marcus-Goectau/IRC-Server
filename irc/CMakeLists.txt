@@ -15,7 +15,7 @@ set(
             ${IRC_D}/linked_list.c ${IRC_D}/linked_list.h
             ${IRC_D}/client_handler.c ${IRC_D}/client_handler.h
             ircd/channel.c ircd/channel.h
-)
+        ircd/logger.c ircd/logger.h)
 
 set(
         CLIENT_SOURCE_FILES

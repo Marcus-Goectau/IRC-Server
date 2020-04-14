@@ -1,5 +1,5 @@
 #Ignore .idea directory
 .idea
-#Ignore cmake logs and cmakelists
+#Ignore cmake logs
 cmake-build-debug
-CMakeLists.txt
+

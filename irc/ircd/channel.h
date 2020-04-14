@@ -18,7 +18,7 @@ struct Channel {
     struct LinkedListNode *client_list_head; // List of users in this channel
     char *name;
     char *topic;
-    pthread_mutex_t channel_mutex; //To avoid two threads editing client_list at the same time
+    pthread_mutex_t channel_mutex; //To avoid two threads editing channel_list at the same time
 };
 
 struct Channel* channel_create(char *name, char *topic);

@@ -63,13 +63,13 @@ int main(int argc, char *argv[]) {
 	
 	// buffer to hold messages from client to be sent to the server
 	char buffer_write[256];
-	int conn_status;
+	int conn_status = 0;
     pthread_t thread;
     pthread_create(&thread, NULL, listenForMessages, (void *)client_socket);
 
     printf("Welcome to the server! Begin chatting!\n");
 	// write to the server
-	while (1) {
+	while (conn_status >= 0) {
 		bzero(buffer_write, 256);
 		fgets(buffer_write, 255, stdin);
 		conn_status = write(client_socket, buffer_write, strlen(buffer_write));
@@ -84,15 +84,16 @@ int main(int argc, char *argv[]) {
 // Function to listen for incoming messages in a separate thread
 void *listenForMessages(void* arg) {
     char buffer_read[256];
-    int conn_status;
+    int conn_status = 0;
     int client_socket = (int)arg;
-    while(1) {
+    while(conn_status >= 0) {
         bzero(buffer_read, 256);
 		conn_status = read(client_socket, buffer_read, 255);
 		if (conn_status < 0) {
 			fprintf(stderr, "ERROR: could not read from remote socket");
 			exit(1);
 		}
-		printf("\n%s\n", buffer_read);
+		printf("%s\n", buffer_read);
     }
+
 }

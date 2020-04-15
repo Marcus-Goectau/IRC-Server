@@ -30,6 +30,7 @@ struct Client* client_handler_getClientConnection(int server_socket, struct sock
 struct LinkedListNode *client_list_head; // List to hold all of the clients
 int client_handler_num_connections;
 int client_handler_num_processing;
+int client_handler_max_connections;
 pthread_mutex_t client_handler_connections_mutex;
 
 #endif //IRCD_CLIENT_HANDLER_H

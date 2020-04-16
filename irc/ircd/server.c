@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
 	client_handler_max_connections = 10;
 	logger_logging_level = 1;
-	sprintf(logger_log_file_location, "\\logs\\server.log");
+	sprintf(logger_log_file_location, "./logs/server.log");
 
 	int port_num = atoi(argv[1]);
 
@@ -50,8 +50,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	// allow immediate reuse of this address
-	if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
-	    error("ERROR: setsockopt(SO_REUSEADDR) failed");
+	if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
+        error("ERROR: setsockopt(SO_REUSEADDR) failed");
+	}
 
 	// define server address and declare a client address to be used 
 	// when accepting connections
@@ -68,6 +69,12 @@ int main(int argc, char *argv[]) {
 	listen(server_socket, client_handler_max_connections);
 	int client_len = sizeof(client_address);
 	// loop to continuously accept connections
+
+    // initialize mutex to lock critical regions for threads
+    if(pthread_mutex_init(&client_handler_connections_mutex, NULL) != 0) {
+        error("ERROR: mutex init failed\n");
+    }
+
 	while(client_handler_num_connections <= client_handler_max_connections) {
 		// accept connections on the server socket and create new threads 
 		// to deal with clients
@@ -90,10 +97,12 @@ int main(int argc, char *argv[]) {
 			error("ERROR: could not accept new connection\n");
 		}
 		char new_client_info[256];
-		sprintf(new_client_info, "New client name: %s\nNew client fd: %d\nNew client op status: %d\nConnected clients: %d\n",
+		sprintf(new_client_info, "A new client has joined the server.\n"
+                           "New client name: %s\nNew client fd: %d\nNew client op status: %d\nConnected clients: %d\n",
 		        new_client->nick, new_client->client_fd, new_client->is_op, client_handler_num_connections);
 		printf("%s\n", new_client_info);
 		logger_write(new_client_info);
+
 		pthread_t thread;
 		pthread_create(&thread, NULL, communicate, (void *)new_client->client_fd); // spin off new thread for client
 	}
@@ -109,7 +118,7 @@ void* communicate(void* arg) {
 	while(conn_status >= 0) {
 		bzero(buffer, 256);
 		bzero(sender, 256);
-		strcpy(sender, "Message From ");
+		sprintf(sender, "Message From ");
 		conn_status = read(new_client_socket, buffer, 255);
 		if (conn_status < 0) {
 			error("ERROR: could not read from socket");
@@ -117,10 +126,12 @@ void* communicate(void* arg) {
 		printf("Message from FD %d: %s\n", new_client_socket, buffer);
 		struct LinkedListNode *node = client_list_head;
         struct Client *client;
+
+        pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
         while(node != NULL) {
             client = node->data;
             if (client->client_fd == new_client_socket) {
-                sprintf(sender, client->nick);
+                strcat(sender, client->nick);
             }
             node = node->next;
         }
@@ -129,7 +140,9 @@ void* communicate(void* arg) {
         while(node != NULL) {
 		    client = node->data;
 		    if (client->client_fd != new_client_socket) {
-		        conn_status = write(client->client_fd, &sender, 255);
+                conn_status = write(client->client_fd, &sender, 255);
+		    }
+		    if (client->client_fd != new_client_socket) {
                 conn_status = write(client->client_fd, &buffer, 255);
 		    }
             if (conn_status < 0) {
@@ -138,6 +151,7 @@ void* communicate(void* arg) {
             node = node->next;
 		}
 		free(node);
+        pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
 	}
 	close(new_client_socket);
 	return 0;

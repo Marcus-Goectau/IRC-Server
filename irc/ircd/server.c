@@ -6,7 +6,7 @@
  * 2/21/2020
  *
  * Creates a TCP server socket that binds to an IP address and port 
- * to listen for connections
+ * to listen for connections. Each connected client is put on an individual thread for communication.
 */
 
 #include <unistd.h>
@@ -21,6 +21,7 @@
 #include "linked_list.h"
 #include "client_handler.h"
 #include "logger.h"
+#include "config.h"
 #include "channel.h"
 
 void *communicate(void *);
@@ -34,25 +35,18 @@ void error(char *message) {
 int main(int argc, char *argv[]) {
 	// output error message if no port argument is provided 
 	if (argc < 2) {
-		error("ERROR: no port provided");
+		error("ERROR: no port provided\n");
 	}
 
-	client_handler_max_connections = 10;
-	logger_logging_level = 1;
-	logger_log_file_location = malloc(sizeof("./logs/server.log"));
-	sprintf(logger_log_file_location, "./logs/server.log");
+	// establish server settings ***(need to be read in from config file)***
+	config_readConfigFile("./server.conf");
 
 	int port_num = atoi(argv[1]);
 
 	// create a new stream (TCP) socket
 	int server_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_socket < 0) {
-		error("ERROR: could not create server socket");
-	}
-
-	// allow immediate reuse of this address
-	if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
-        error("ERROR: setsockopt(SO_REUSEADDR) failed");
+		error("ERROR: could not create server socket\n");
 	}
 
 	// define server address and declare a client address to be used 
@@ -62,6 +56,16 @@ int main(int argc, char *argv[]) {
 	server_address.sin_family = AF_INET;
 	server_address.sin_port = htons(port_num);
 	server_address.sin_addr.s_addr = INADDR_ANY;
+
+    // allow immediate reuse of this address
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
+        error("ERROR: setsockopt(SO_REUSEADDR) failed\n");
+    }
+
+    // allow immediate reuse of this port
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int)) < 0) {
+        error("ERROR: setsockopt(SO_REUSEADDR) failed\n");
+    }
 
 	// bind the socket to the specified IP address and port
 	bind(server_socket, (struct sockaddr *) &server_address, sizeof(server_address));
@@ -77,7 +81,7 @@ int main(int argc, char *argv[]) {
     }
 
 	while(client_handler_num_connections <= client_handler_max_connections) {
-		// accept connections on the server socket and create new threads 
+		// accept connections on the server socket and create new threads
 		// to deal with clients
 		struct Client *new_client = client_handler_getClientConnection(server_socket, (struct sockaddr *) &client_address, &client_len);
 
@@ -112,47 +116,49 @@ int main(int argc, char *argv[]) {
 
 // function to communicate with each client in their own thread
 void* communicate(void* arg) {
-	char buffer[256];
+	char buffer[client_handler_buffer_size];
 	int conn_status = 0;
 	int new_client_socket = (int)arg;
 	char sender[256];
 	while(conn_status >= 0) {
-		bzero(buffer, 256);
+		bzero(buffer, client_handler_buffer_size);
 		bzero(sender, 256);
 		sprintf(sender, "Message From ");
-		conn_status = read(new_client_socket, buffer, 255);
+		conn_status = read(new_client_socket, buffer, client_handler_buffer_size - 1);
 		if (conn_status < 0) {
-			error("ERROR: could not read from socket");
+			error("ERROR: could not read from socket\n");
 		}
-		printf("Message from FD %d: %s\n", new_client_socket, buffer);
-		struct LinkedListNode *node = client_list_head;
-        struct Client *client;
+		if (strncmp(buffer, "\0", 1) != 0) {
+            printf("Message from FD %d: %s\n", new_client_socket, buffer);
+            struct LinkedListNode *node = client_list_head;
+            struct Client *client;
 
-        pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
-        while(node != NULL) {
-            client = node->data;
-            if (client->client_fd == new_client_socket) {
-                strcat(sender, client->nick);
+            pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
+            while(node != NULL) {
+                client = node->data;
+                if (client->client_fd == new_client_socket) {
+                    strcat(sender, client->nick);
+                }
+                node = node->next;
             }
-            node = node->next;
-        }
-        node = client_list_head;
-        // Loop through list of clients and broadcast received messages to all other clients
-        while(node != NULL) {
-		    client = node->data;
-		    if (client->client_fd != new_client_socket) {
-                conn_status = write(client->client_fd, &sender, 255);
-		    }
-		    if (client->client_fd != new_client_socket) {
-                conn_status = write(client->client_fd, &buffer, 255);
-		    }
-            if (conn_status < 0) {
-                error("ERROR: could not  write to socket");
+            node = client_list_head;
+            // Loop through list of clients and broadcast received messages to all other clients
+            while(node != NULL) {
+                client = node->data;
+                if (client->client_fd != new_client_socket) {
+                    conn_status = write(client->client_fd, &sender, 255);
+                }
+                if (client->client_fd != new_client_socket) {
+                    conn_status = write(client->client_fd, &buffer, 255);
+                }
+                if (conn_status < 0) {
+                    error("ERROR: could not  write to socket");
+                }
+                node = node->next;
             }
-            node = node->next;
+            free(node);
+            pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
 		}
-		free(node);
-        pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
 	}
 	close(new_client_socket);
 	return 0;

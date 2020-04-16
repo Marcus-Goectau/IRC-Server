@@ -37,12 +37,6 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-    // allow immediate reuse of this address
-    if (setsockopt(client_socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
-        fprintf(stderr, "ERROR: setsockopt(SO_REUSEADDR) failed");
-        exit(1);
-    }
-
 	// struct to store information about the host
 	struct hostent *server;
 	server = gethostbyname(argv[1]);
@@ -98,6 +92,7 @@ void *listenForMessages(void* arg) {
 			fprintf(stderr, "ERROR: could not read from remote socket");
 			exit(1);
 		}
+		if (strncmp(buffer_read, "\0", 1) != 0)
 		printf("%s\n", buffer_read);
     }
 

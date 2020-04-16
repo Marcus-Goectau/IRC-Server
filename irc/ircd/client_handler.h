@@ -32,5 +32,6 @@ int client_handler_num_connections;
 int client_handler_num_processing;
 int client_handler_max_connections;
 pthread_mutex_t client_handler_connections_mutex;
+int client_handler_buffer_size;
 
 #endif //IRCD_CLIENT_HANDLER_H

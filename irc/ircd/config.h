@@ -10,8 +10,8 @@
 #ifndef IRC_CONFIG_H
 #define IRC_CONFIG_H
 
-void config_parse(char *buffer);
+void config_parseLine(char *buffer);
 
-
+void config_readConfigFile(char *file);
 
 #endif //IRC_CONFIG_H

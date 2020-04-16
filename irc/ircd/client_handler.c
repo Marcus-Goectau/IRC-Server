@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "client_handler.h"
+#include <string.h>
 
 /// accepts a new client connection, adds the new client struct to the list of clients
 /// \param server_socket: socket fd returned from socket()
@@ -24,8 +25,10 @@ struct Client* client_handler_getClientConnection(int server_socket, struct sock
     new_client->client_address = (struct sockaddr_in *) client_address;
     new_client->client_length = (socklen_t) client_address_len;
     sprintf(client_name, "Client %d", client_handler_num_connections);
-    new_client->nick = client_name;
-    new_client->full_name = client_name;
+    new_client->nick = malloc(sizeof(client_name));
+    new_client->full_name = malloc(sizeof(client_name));
+    strcpy(new_client->nick, client_name);
+    strcpy(new_client->full_name, client_name);
 
     return new_client;
 }

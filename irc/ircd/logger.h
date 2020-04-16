@@ -12,10 +12,10 @@
 
 #include <bits/types/FILE.h>
 
-void logger_write(char log_entry[256]);
+void logger_write(const char *log_entry);
 
 FILE *logger_log_file;
-char logger_log_file_location[256];
+char *logger_log_file_location;
 int logger_logging_level; //indicates level of logging (w/ 0 = no logging)
 
 #endif //IRC_LOGGER_H

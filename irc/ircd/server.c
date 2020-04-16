@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
 
 	client_handler_max_connections = 10;
 	logger_logging_level = 1;
+	logger_log_file_location = malloc(sizeof("./logs/server.log"));
 	sprintf(logger_log_file_location, "./logs/server.log");
 
 	int port_num = atoi(argv[1]);

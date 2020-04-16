@@ -21,7 +21,7 @@ struct Channel {
     pthread_mutex_t channel_mutex; //To avoid two threads editing channel_list at the same time
 };
 
-struct Channel* channel_create(char *name, char *topic);
+struct Channel* channel_create(const char *name, const char *topic);
 
 struct LinkedListNode *channel_list_head;
 

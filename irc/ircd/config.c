@@ -15,6 +15,8 @@
 #include "logger.h"
 #include <bits/types/FILE.h>
 
+/// shifts the contents of an array of characters the the left by one character
+/// \param string: char array to be shifted
 void leftShift(char *string) {
     int i;
     for (i = 1; i < strlen(string); i++) {
@@ -22,6 +24,8 @@ void leftShift(char *string) {
     }
 }
 
+/// parses information from the config file using the format specified in the config file.
+/// \param buffer: line to be parsed
 void config_parseLine(char *buffer) {
     char *line = strstr(buffer, "=");
     int len;
@@ -45,6 +49,8 @@ void config_parseLine(char *buffer) {
     }
 }
 
+/// reads in configuration file and uses parseLine function to parse and set server settings
+/// \param filename: file path for the file to be read
 void config_readConfigFile(char *filename) {
     FILE *file;
     char *line = NULL;

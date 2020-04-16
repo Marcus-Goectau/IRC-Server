@@ -13,7 +13,7 @@
 #include <string.h>
 
 /// writes to a log file with current time information
-/// \param log_entry The string to be appended to the log file
+/// \param log_entry: The string to be appended to the log file
 void logger_write(const char *log_entry) {
     if (logger_logging_level != 0) {
         time_t my_time = time(NULL);

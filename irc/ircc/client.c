@@ -18,7 +18,6 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <pthread.h>
-#include "client_handler.h"
 
 void *listenForMessages(void *);
 
@@ -37,6 +36,12 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "ERROR: could not open client socket");
 		exit(1);
 	}
+
+    // allow immediate reuse of this address
+    if (setsockopt(client_socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
+        fprintf(stderr, "ERROR: setsockopt(SO_REUSEADDR) failed");
+        exit(1);
+    }
 
 	// struct to store information about the host
 	struct hostent *server;

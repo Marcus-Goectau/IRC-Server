@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	// establish server settings ***(need to be read in from config file)***
-	config_readConfigFile("./server.conf");
+	config_readConfigFile("./ircd/server.conf");
 
 	int port_num = atoi(argv[1]);
 

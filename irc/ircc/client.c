@@ -95,5 +95,4 @@ void *listenForMessages(void* arg) {
 		if (strncmp(buffer_read, "\0", 1) != 0)
 		printf("%s\n", buffer_read);
     }
-
 }

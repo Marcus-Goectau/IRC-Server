@@ -10,14 +10,14 @@
 #include "linked_list.h"
 #include <stdlib.h>
 
-/// adds a new node to the front of a list
+/// adds a new node to the front of the list
 /// \param head: the current head of the linked list
 /// \param data: the data to be stored within the newly added node
 void linked_list_push(struct LinkedListNode **head, void *data) {
-    struct LinkedListNode *node = (struct LinkedListNode*)malloc(sizeof(struct LinkedListNode));
-    node->next = *head;
-    node->data = data;
-    *head = node; // set this node to be the new current head
+    struct LinkedListNode *new_node = (struct LinkedListNode*)malloc(sizeof(struct LinkedListNode));
+    new_node->data = data;
+    new_node->next = *head;
+    *head = new_node; // set this node to be the bew current head
 }
 
 /// gets the next node in a list
@@ -36,24 +36,31 @@ struct LinkedListNode* linked_list_get(struct LinkedListNode *head, void *data) 
         return NULL;
     }
 
-    struct LinkedListNode *currentNode = head;
-    while (currentNode->data != data && currentNode != NULL) { // search the list for the node containing data
-        currentNode = currentNode->next;
+    struct LinkedListNode *current_node = head;
+    while (current_node->data != data && current_node != NULL) { // search the list for the node containing data
+        current_node = current_node->next;
     }
 
-    if (currentNode->data != data) { // if the list does not contain the data, return a NULL
+    if (current_node->data != data) { // if the list does not contain the data, return NULL
         return NULL;
     }
 
-    return currentNode;
+    return current_node;
 }
 
 /// finds and deletes a node from a list
 /// \param head: the current head of the list
 /// \param node: node to delete
-void linked_list_delete(struct LinkedListNode *head, struct LinkedListNode *node) {
-    struct LinkedListNode *currentNode = head;
-    while (currentNode->next != node && currentNode != NULL) {
+void linked_list_delete(struct LinkedListNode **head, struct LinkedListNode *node) {
+    struct LinkedListNode *currentNode = *head;
+
+    if (*head == node) {
+        *head = node->next;
+        free(node);
+        return;
+    }
+
+    while (currentNode != NULL && currentNode->next != node) {
         currentNode = currentNode->next;
     }
 

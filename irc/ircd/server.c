@@ -93,9 +93,9 @@ int main(int argc, char *argv[]) {
             new_client->nick = "Client 0";
             new_client->full_name = "Client 0";
 		} else {
-            linked_list_push((struct LinkedListNode**)client_list_head, new_client);
-		}
+            linked_list_push((struct LinkedListNode **) client_list_head, new_client);
 
+        }
         client_handler_num_connections = linked_list_size(client_list_head);
 
 		if (new_client->client_fd < 0) {
@@ -109,7 +109,9 @@ int main(int argc, char *argv[]) {
 		logger_write(new_client_info);
 
 		pthread_t thread;
-		pthread_create(&thread, NULL, communicate, (void *)new_client->client_fd); // spin off new thread for client
+		pthread_create(&thread, NULL, communicate, (void *)new_client); // spin off new thread for client
+		pthread_detach(thread);
+
 	}
 	return 0;
 }
@@ -118,7 +120,8 @@ int main(int argc, char *argv[]) {
 void* communicate(void* arg) {
 	char buffer[client_handler_buffer_size];
 	int conn_status = 0;
-	int new_client_socket = (int)arg;
+	struct Client *new_client = (struct Client *)arg;
+	int new_client_socket = new_client->client_fd;
 	char sender[256];
 	while(conn_status >= 0) {
 		bzero(buffer, client_handler_buffer_size);
@@ -127,6 +130,21 @@ void* communicate(void* arg) {
 		conn_status = read(new_client_socket, buffer, client_handler_buffer_size - 1);
 		if (conn_status < 0) {
 			error("ERROR: could not read from socket\n");
+		} else if (conn_status == 0) {  // client has disconnected
+		    shutdown(new_client_socket, SHUT_RDWR);
+		    close(new_client_socket);
+
+            pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
+            struct LinkedListNode *node = linked_list_get(client_list_head, new_client);
+            linked_list_delete((struct LinkedListNode **) client_list_head, node);
+            client_handler_num_connections = linked_list_size(client_list_head);
+            pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
+
+            char disconnect_message[256];
+            sprintf(disconnect_message, "FD %d has disconnected\n\n", new_client_socket);
+            printf(disconnect_message);
+            logger_write(disconnect_message);
+		    pthread_exit(0);
 		}
 		if (strncmp(buffer, "\0", 1) != 0) {
             printf("Message from FD %d: %s\n", new_client_socket, buffer);

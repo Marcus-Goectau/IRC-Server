@@ -21,7 +21,7 @@ struct LinkedListNode* linked_list_next(struct LinkedListNode *node);
 
 struct LinkedListNode* linked_list_get(struct LinkedListNode *head, void *data);
 
-void linked_list_delete(struct LinkedListNode *head, struct LinkedListNode *node);
+void linked_list_delete(struct LinkedListNode **head, struct LinkedListNode *node);
 
 int linked_list_size(struct LinkedListNode *head);
 

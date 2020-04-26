@@ -89,11 +89,12 @@ int main(int argc, char *argv[]) {
 		if (linked_list_size(client_list_head) == 0) {
             client_list_head = (struct LinkedListNode*) malloc(sizeof(struct LinkedListNode));
             client_list_head->data = new_client;
+            client_list_head->next = NULL;
             new_client->is_op = 1;
             new_client->nick = "Client 0";
             new_client->full_name = "Client 0";
 		} else {
-            linked_list_push((struct LinkedListNode **) client_list_head, new_client);
+            linked_list_push(&client_list_head, new_client);
 
         }
         client_handler_num_connections = linked_list_size(client_list_head);
@@ -136,7 +137,7 @@ void* communicate(void* arg) {
 
             pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
             struct LinkedListNode *node = linked_list_get(client_list_head, new_client);
-            linked_list_delete((struct LinkedListNode **) client_list_head, node);
+            linked_list_delete(&client_list_head, node);
             client_handler_num_connections = linked_list_size(client_list_head);
             pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
 

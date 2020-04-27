@@ -31,10 +31,10 @@ void config_parseLine(char *buffer) {
     int len;
     if (line) {
         len = strlen(line);
-        leftShift(line);
+        leftShift(line); // get rid of '=' sign from config file
         if (line[len-1] != '\0' && line[len-2] != '\0') {
             line[len-1] = '\0';
-            line[len-2] = '\0';
+            line[len-2] = '\0'; // add null terminating bytes
         }
         if (strncmp(buffer, "LOG_FILE_LOCATION", 17) == 0) {
             logger_log_file_location = malloc(sizeof(line));

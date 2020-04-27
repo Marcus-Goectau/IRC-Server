@@ -34,12 +34,36 @@ void error(char *message) {
 
 int main(int argc, char *argv[]) {
 	// output error message if no port argument is provided 
-	if (argc < 2) {
-		error("ERROR: no port provided\n");
+	if (argc == 2 && strcmp(argv[1], "help") == 0) {
+		printf("Usage: %s (port) (overridableconfigsetting) (configvalue)\n", argv[0]);
+		printf("Overridable settings: \'logfilelocation\' \'logginglevel\' \'maxnumclients\' \'buffsize\'\n");
+		printf("NOTICE: command line arguments that override configuration file settings do not save after exit.\n");
+		exit(1);
+	} else if (argc < 2) {
+	    printf("Usage: %s (port) (configoverride) (configvalue)\nUse %s help for more info\n", argv[0], argv[0]);
+	    exit(1);
 	}
 
 	// establish server settings ***(need to be read in from config file)***
 	config_readConfigFile("./ircd/server.conf");
+
+	// allow for overriding of config file settings
+	if (argc == 4) {
+        if (strcmp(argv[2], "logfilelocation") == 0) {
+            logger_log_file_location = argv[3];
+        } else if (strcmp(argv[2], "logginglevel") == 0) {
+            logger_logging_level = atoi(argv[3]);
+        } else if (strcmp(argv[2], "maxnumclients") == 0) {
+            client_handler_max_connections = atoi(argv[3]);
+        } else if (strcmp(argv[2], "buffsize") == 0) {
+            client_handler_buffer_size = atoi(argv[3]);
+        } else {
+            printf("Invalid config setting\n");
+        }
+	} else if (argc == 3 || argc > 4) {
+        printf("Usage: %s (port) (configoverride) (configvalue)\nUse: %s help for more info\n", argv[0], argv[0]);
+        exit(1);
+	}
 
 	int port_num = atoi(argv[1]);
 
@@ -137,7 +161,7 @@ void* communicate(void* arg) {
 
             pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
             struct LinkedListNode *node = linked_list_get(client_list_head, new_client);
-            linked_list_delete(&client_list_head, node);
+            linked_list_delete(&client_list_head, node);    // remove client from list of clients
             client_handler_num_connections = linked_list_size(client_list_head);
             pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
 

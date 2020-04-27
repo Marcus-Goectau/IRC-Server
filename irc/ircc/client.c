@@ -6,6 +6,7 @@
  * 2/21/2020
  * 
  * Creates a TCP  client socket to send and recieve data from another socket endpoint i.e. a server
+ * IRC server commands use the following format: /<command> <argument>
 */
 
 #include <unistd.h>

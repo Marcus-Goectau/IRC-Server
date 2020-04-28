@@ -25,8 +25,8 @@ struct Client* client_handler_getClientConnection(int server_socket, struct sock
     new_client->client_address = (struct sockaddr_in *) client_address;
     new_client->client_length = (socklen_t) client_address_len;
     sprintf(client_name, "Client %d", client_handler_num_connections);
-    new_client->nick = malloc(sizeof(client_name));
-    new_client->full_name = malloc(sizeof(client_name));
+    new_client->nick = malloc(strlen(client_name) + 1);
+    new_client->full_name = malloc(strlen(client_name) + 1);
     strcpy(new_client->nick, client_name);
     strcpy(new_client->full_name, client_name);
 

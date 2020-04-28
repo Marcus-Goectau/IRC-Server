@@ -7,21 +7,38 @@
  * support for command messages sent by clients
 */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "client_handler.h"
+#include "channel.h"
 #include "commands.h"
+#include "linked_list.h"
 
-int commands_getCommand(char *command) {
-    return 1;
+int commands_getCommand(char *command, struct Client *client) {
+
+    char arguments[100];
+
+    if (command == NULL) {
+        return -1;
+    }
+
+    if (strncmp(command, "nick", 4) == 0) {
+        strcpy(arguments, command + 5);
+        return commands_NICK(arguments, client);
+    } else {
+        return -1;
+    }
 }
 
-int commands_PASS(char *password) {
-    return 1;
+int commands_NICK(char *nick, struct Client *client) {
+    nick[strlen(nick) - 1] = '\0';
+    client->nick = malloc(strlen(nick) + 1);
+    strcpy(client->nick, nick);
+    return 0;
 }
 
-int commands_NICK(char *nic) {
-    return 1;
-}
-
-int commands_USER(char *user_name, char *server_name, char *real_name) {
+int commands_USER(char *user_name, char *real_name) {
     return 1;
 }
 

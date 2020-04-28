@@ -22,6 +22,7 @@
 #include "client_handler.h"
 #include "logger.h"
 #include "config.h"
+#include "commands.h"
 #include "channel.h"
 
 void *communicate(void *);
@@ -148,6 +149,9 @@ void* communicate(void* arg) {
 	struct Client *new_client = (struct Client *)arg;
 	int new_client_socket = new_client->client_fd;
 	char sender[256];
+	char error_message[256];
+	char command[100];
+    int command_status = 0;
 	while(conn_status >= 0) {
 		bzero(buffer, client_handler_buffer_size);
 		bzero(sender, 256);
@@ -165,14 +169,26 @@ void* communicate(void* arg) {
             client_handler_num_connections = linked_list_size(client_list_head);
             pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
 
-            char disconnect_message[256];
-            sprintf(disconnect_message, "FD %d has disconnected\n\n", new_client_socket);
-            printf(disconnect_message);
-            logger_write(disconnect_message);
+            bzero(error_message, 256);
+            sprintf(error_message, "%s has disconnected\n\n", new_client->nick);
+            printf(error_message);
+            logger_write(error_message);
 		    pthread_exit(0);
 		}
-		if (strncmp(buffer, "\0", 1) != 0) {
-            printf("Message from FD %d: %s\n", new_client_socket, buffer);
+
+		if (strncmp(buffer, "/", 1) == 0) { // parse command from client
+		    bzero(command, 100);
+		    strcpy(command, buffer+1);
+            command_status = commands_getCommand(command, new_client);
+            if (command_status != 0) {
+                bzero(error_message, 256);
+                sprintf(error_message, "ERROR: could not parse command from %s\n", new_client->nick);
+                logger_write(error_message);
+                printf(error_message);
+                write(new_client->client_fd, "Invalid command. Use /help for command help.\n", 50);
+            }
+		} else if (strncmp(buffer, "\0", 1) != 0) {
+		    printf("Message from %s: %s\n", new_client->nick, buffer);
             struct LinkedListNode *node = client_list_head;
             struct Client *client;
 

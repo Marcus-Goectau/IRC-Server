@@ -10,10 +10,10 @@
 #ifndef IRC_COMMANDS_H
 #define IRC_COMMANDS_H
 
-int commands_getCommand(char *command);
+int commands_getCommand(char *command, struct Client *client);
 int commands_PASS(char *password);
-int commands_NICK(char *nic);
-int commands_USER(char *user_name, char *server_name, char *real_name);
+int commands_NICK(char *nick, struct Client *client);
+int commands_USER(char *user_name, char *real_name);
 int commands_OPER(char *user, char *password);
 int commands_QUIT(char *message);
 int commands_JOIN(char *channel);

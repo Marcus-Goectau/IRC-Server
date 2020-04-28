@@ -7,6 +7,7 @@
  * 
  * Creates a TCP  client socket to send and recieve data from another socket endpoint i.e. a server
  * IRC server commands use the following format: /<command> <argument>
+ * commands should be all lower case
 */
 
 #include <unistd.h>
@@ -19,6 +20,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <pthread.h>
+
 
 void *listenForMessages(void *);
 
@@ -67,15 +69,21 @@ int main(int argc, char *argv[]) {
     pthread_t thread;
     pthread_create(&thread, NULL, listenForMessages, (void *)client_socket);
 
-    printf("Welcome to the server! Begin chatting!\n");
+    printf("Welcome to the server! Begin chatting! Type /help for command list\n");
 	// write to the server
 	while (conn_status >= 0) {
 		bzero(buffer_write, 256);
 		fgets(buffer_write, 255, stdin);
-		conn_status = write(client_socket, buffer_write, strlen(buffer_write));
-		if (conn_status < 0) {
-			fprintf(stderr, "ERROR: could not write to the remote socket");
-			exit(1);
+		if (strncmp(buffer_write, "/help", 5) == 0) {
+		    printf("Current command list:\n/nick (nick_name)\n/user (user_name) (real_name)\n/oper (user)\n/quit (message)\n/join (channel_name)\n"
+             "/part (channel_name)\n/mode (nick) (mode_flag)\n/topic (channel_name) (topic)\n/names (channel_name)\n/list\n/kick (channel_name) (user)\n"
+             "/privmsg (nick) (message)\n");
+		} else {
+            conn_status = write(client_socket, buffer_write, strlen(buffer_write));
+            if (conn_status < 0) {
+                fprintf(stderr, "ERROR: could not write to the remote socket");
+                exit(1);
+            }
 		}
 	}
 	return 0;

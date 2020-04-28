@@ -4,7 +4,7 @@
 all : server client
 
 server: ./ircd/server.c
-	gcc -o server ./ircd/server.c ./ircd/linked_list.c ./ircd/client_handler.c ./ircd/channel.c ./ircd/logger.c ./ircd/config.c -lpthread
+	gcc -o server ./ircd/server.c ./ircd/linked_list.c ./ircd/client_handler.c ./ircd/channel.c ./ircd/logger.c ./ircd/config.c -lpthread ./ircd/commands.c
 
 client: ./ircc/client.c
 	gcc -o client ./ircc/client.c -lpthread

@@ -167,10 +167,12 @@ void* communicate(void* arg) {
             linked_list_delete(&client_list_head, node);    // remove client from list of clients
             client_handler_num_connections = linked_list_size(client_list_head);
             pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
+
             bzero(error_message, 256);
             sprintf(error_message, "%s has disconnected\n\n", new_client->nick);
             node = client_list_head;
             struct Client *client;
+
             pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
             while (node != NULL) {
                 client = node->data;
@@ -183,22 +185,21 @@ void* communicate(void* arg) {
                 node = node->next;
             }
             pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
+
             printf(error_message);
             logger_write(error_message);
 		    pthread_exit(0);
 		}
 
 		if (strncmp(buffer, "/", 1) == 0) { // parse command from client
-		    bzero(command, 100);
-		    strcpy(command, buffer+1);
+            bzero(command, 100);
+            strcpy(command, buffer+1);
+
+            pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
             command_status = commands_getCommand(command, new_client);
-            if (command_status != 0) {
-                bzero(error_message, 256);
-                sprintf(error_message, "ERROR: could not parse command from %s\n", new_client->nick);
-                logger_write(error_message);
-                printf(error_message);
-                write(new_client->client_fd, "Invalid command. Use /help for command help.\n", 50);
-            }
+            commands_checkCommandStatus(command_status, new_client);
+            pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
+
 		} else if (strncmp(buffer, "\0", 1) != 0) { // prevent blank messages from flooding server
 		    printf("Message from %s: %s\n", new_client->nick, buffer);
             struct LinkedListNode *node = client_list_head;

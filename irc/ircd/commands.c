@@ -9,10 +9,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
 #include "client_handler.h"
 #include "channel.h"
 #include "commands.h"
+#include "logger.h"
+#include "channel.h"
 #include "linked_list.h"
 
 /// parses command from messages sent from clients and calls appropriate function
@@ -23,7 +26,7 @@ int commands_getCommand(char *command, struct Client *client) {
 
     char arguments[100];
 
-    if (command == NULL) {
+    if (command == NULL || client == NULL) {
         return -1;
     }
 
@@ -39,8 +42,37 @@ int commands_getCommand(char *command, struct Client *client) {
     } else if (strncmp(command, "quit", 4) == 0) {
         strcpy(arguments, command + 5);
         return commands_QUIT(arguments, client);
-    } else {
+    } else if (strncmp(command, "join", 4) == 0) {
+        strcpy(arguments, command + 5);
+        return commands_JOIN(arguments, client);
+    } else if (strncmp(command, "part", 4) == 0) {
+        strcpy(arguments, command + 5);
+        return commands_PART(arguments, client);
+    } else if (strncmp(command, "topic", 5) == 0) {
+        strcpy(arguments, command + 6);
+        return commands_TOPIC(arguments, arguments, client); // need to figure out how to split arguments into two strings
+    }else {
         return -1;
+    }
+}
+
+/// Checks return values from commmands functions and displays error messages to clients
+/// \param command_status: return value from attempted command sent from client
+/// \param client: client who sent the command
+void commands_checkCommandStatus(int command_status, struct Client *client) {
+    char buffer[256];
+    if (command_status != 0) {
+        if (command_status == -1) {
+            sprintf(buffer, "ERROR: could not parse command from %s\n", client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "Invalid command format. Use /help for command help.\n", 50);
+        } else if (command_status == -2) {
+            sprintf(buffer, "ERROR: %s tried to raise the op status of another client, but does not have privileges to do so.\n", client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "You need to have op status to raise the op status of another user.\n", 50);
+        }
     }
 }
 
@@ -52,53 +84,62 @@ int commands_NICK(char *nick, struct Client *client) {
 }
 
 int commands_USER(char *full_name, struct Client *client) {
-    return 1;
+    full_name[strlen(full_name) - 1] = '\0';
+    client->nick = malloc(strlen(full_name) + 1);
+    strcpy(client->full_name, full_name);
+    return 0;
 }
 
 int commands_OPER(char *user, struct Client *client) {
-    return 1;
+    if (client->is_op != 1) {
+        return -2;
+    }
+    struct LinkedListNode *node = client_list_head;
+    struct Client *target_client = node->data;
+   
+    return 0;
 }
 
 int commands_QUIT(char *message, struct Client *client) {
-    return 1;
+    return 0;
 }
 
-int commands_JOIN(char *channel) {
-    return 1;
+int commands_JOIN(char *channel, struct Client *client) {
+    return 0;
 }
 
-int commands_PART(char *channel) {
-    return 1;
+int commands_PART(char *channel, struct Client *client) {
+    return 0;
 }
 
 int commands_channel_MODE(char *channel, char mode) {
-    return 1;
+    return 0;
 }
 
 int commands_user_MODE(char *nick_name, char mode) {
-    return 1;
+    return 0;
 }
 
-int commands_TOPIC(char *channel, char *topic) {
-    return 1;
+int commands_TOPIC(char *channel, char *topic, struct Client *client) {
+    return 0;
 }
 
 int commands_NAMES(char *channel) {
-    return 1;
+    return 0;
 }
 
 int commands_LIST() {
-    return 1;
+    return 0;
 }
 
 int commands_INVITE(char *nick_name, char *channel) {
-    return 1;
+    return 0;
 }
 
 int commands_KICK(char *channel, char *user) {
-    return 1;
+    return 0;
 }
 
 int commands_PRIVMSG(char *receiver, char *message) {
-    return 1;
+    return 0;
 }

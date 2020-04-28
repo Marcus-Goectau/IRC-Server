@@ -13,9 +13,9 @@
 int commands_getCommand(char *command, struct Client *client);
 int commands_PASS(char *password);
 int commands_NICK(char *nick, struct Client *client);
-int commands_USER(char *user_name, char *real_name);
-int commands_OPER(char *user, char *password);
-int commands_QUIT(char *message);
+int commands_USER(char *full_name, struct Client *client);
+int commands_OPER(char *user, struct Client *client);
+int commands_QUIT(char *message, struct Client *client);
 int commands_JOIN(char *channel);
 int commands_PART(char *channel);
 int commands_channel_MODE(char *channel, char mode);

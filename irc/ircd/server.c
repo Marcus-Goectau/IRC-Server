@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
 		}
 		char new_client_info[256];
 		sprintf(new_client_info, "A new client has joined the server.\n"
-                           "New client name: %s\nNew client fd: %d\nNew client op status: %d\nConnected clients: %d\n",
+                           "New client nick: %s\nNew client fd: %d\nNew client op status: %d\nConnected clients: %d\n",
 		        new_client->nick, new_client->client_fd, new_client->is_op, client_handler_num_connections);
 		printf("%s\n", new_client_info);
 		logger_write(new_client_info);

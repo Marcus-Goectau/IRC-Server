@@ -15,6 +15,10 @@
 #include "commands.h"
 #include "linked_list.h"
 
+/// parses command from messages sent from clients and calls appropriate function
+/// \param command: command and arguments to be parsed
+/// \param client: client who sent the command
+/// \return: -1 on fail to get command and 0 if successful
 int commands_getCommand(char *command, struct Client *client) {
 
     char arguments[100];
@@ -26,6 +30,15 @@ int commands_getCommand(char *command, struct Client *client) {
     if (strncmp(command, "nick", 4) == 0) {
         strcpy(arguments, command + 5);
         return commands_NICK(arguments, client);
+    }else if (strncmp(command, "user", 4) == 0) {
+        strcpy(arguments, command + 5);
+        return commands_USER(arguments, client);
+    } else if (strncmp(command, "oper", 4) == 0) {
+        strcpy(arguments, command + 5);
+        return commands_OPER(arguments, client);
+    } else if (strncmp(command, "quit", 4) == 0) {
+        strcpy(arguments, command + 5);
+        return commands_QUIT(arguments, client);
     } else {
         return -1;
     }
@@ -38,15 +51,15 @@ int commands_NICK(char *nick, struct Client *client) {
     return 0;
 }
 
-int commands_USER(char *user_name, char *real_name) {
+int commands_USER(char *full_name, struct Client *client) {
     return 1;
 }
 
-int commands_OPER(char *user, char *password) {
+int commands_OPER(char *user, struct Client *client) {
     return 1;
 }
 
-int commands_QUIT(char *message) {
+int commands_QUIT(char *message, struct Client *client) {
     return 1;
 }
 

@@ -160,7 +160,6 @@ void* communicate(void* arg) {
 		if (conn_status < 0) {
 			error("ERROR: could not read from socket\n");
 		} else if (conn_status == 0) {  // client has disconnected
-		    shutdown(new_client_socket, SHUT_RDWR);
 		    close(new_client_socket);
 
             pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
@@ -168,9 +167,22 @@ void* communicate(void* arg) {
             linked_list_delete(&client_list_head, node);    // remove client from list of clients
             client_handler_num_connections = linked_list_size(client_list_head);
             pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
-
             bzero(error_message, 256);
             sprintf(error_message, "%s has disconnected\n\n", new_client->nick);
+            node = client_list_head;
+            struct Client *client;
+            pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
+            while (node != NULL) {
+                client = node->data;
+                if (client->client_fd != new_client_socket) {
+                    conn_status = write(client->client_fd, error_message, 100); // write disconnect message to clients
+                }
+                if (conn_status < 0) {
+                    error("ERROR: could not write to socket");
+                }
+                node = node->next;
+            }
+            pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
             printf(error_message);
             logger_write(error_message);
 		    pthread_exit(0);
@@ -187,7 +199,7 @@ void* communicate(void* arg) {
                 printf(error_message);
                 write(new_client->client_fd, "Invalid command. Use /help for command help.\n", 50);
             }
-		} else if (strncmp(buffer, "\0", 1) != 0) {
+		} else if (strncmp(buffer, "\0", 1) != 0) { // prevent blank messages from flooding server
 		    printf("Message from %s: %s\n", new_client->nick, buffer);
             struct LinkedListNode *node = client_list_head;
             struct Client *client;
@@ -215,7 +227,6 @@ void* communicate(void* arg) {
                 }
                 node = node->next;
             }
-            free(node);
             pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
 		}
 	}

@@ -15,7 +15,6 @@
 #include "channel.h"
 #include "commands.h"
 #include "logger.h"
-#include "channel.h"
 #include "linked_list.h"
 
 /// parses command from messages sent from clients and calls appropriate function
@@ -68,10 +67,19 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
             printf(buffer);
             write(client->client_fd, "Invalid command format. Use /help for command help.\n", 50);
         } else if (command_status == -2) {
-            sprintf(buffer, "ERROR: %s tried to raise the op status of another client, but does not have privileges to do so.\n", client->nick);
+            sprintf(buffer,
+                    "ERROR: %s tried to raise the op status of another client, but does not have privileges to do so.\n",
+                    client->nick);
             logger_write(buffer);
             printf(buffer);
-            write(client->client_fd, "You need to have op status to raise the op status of another user.\n", 50);
+            write(client->client_fd, "You need to have op status to raise the op status of another user.\n", 100);
+        } else if (command_status == -3) {
+            sprintf(buffer,
+                    "ERROR: %s tried to raise the op status of another client, but a client with that nick name does not exist.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "There is no user with that nick name.\n", 50);
         }
     }
 }
@@ -94,10 +102,12 @@ int commands_OPER(char *user, struct Client *client) {
     if (client->is_op != 1) {
         return -2;
     }
-    struct LinkedListNode *node = client_list_head;
-    struct Client *target_client = node->data;
-   
-    return 0;
+    struct Client *target_client = client_handler_findClient(user, client_list_head);
+    if (target_client != NULL) {
+        target_client->is_op = 1;
+        return 0;
+    }
+    return -3;
 }
 
 int commands_QUIT(char *message, struct Client *client) {

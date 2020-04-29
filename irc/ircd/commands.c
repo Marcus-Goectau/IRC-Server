@@ -16,6 +16,7 @@
 #include "commands.h"
 #include "logger.h"
 #include "linked_list.h"
+#include <pthread.h>
 
 /// parses command from messages sent from clients and calls appropriate function
 /// \param command: command and arguments to be parsed
@@ -122,9 +123,37 @@ int commands_OPER(char *user, struct Client *client) {
     return -3;
 }
 
-
+/// allows a client to quit the server
+/// \param message: quit message
+/// \param client: the client quiting the server
+/// \return: exit code
 int commands_QUIT(char *message, struct Client *client) {
+    char quit_message[256];
+    shutdown(client->client_fd, 2);
+    close(client->client_fd);
+    struct LinkedListNode *node = linked_list_get(client_list_head, client);
+    linked_list_delete(&client_list_head, node);    // remove client from list of clients
+    client_handler_num_connections = linked_list_size(client_list_head);
 
+    sprintf(quit_message, "%s has disconnected: %s\n\n", client->nick, message);
+    struct LinkedListNode *current_node = client_list_head;
+    struct Client *current_client;
+
+    int conn_status = 0;
+    while (current_node != NULL) {
+        current_client = current_node->data;
+        conn_status = write(current_client->client_fd, quit_message, 256); // write disconnect message to clients
+        if (conn_status < 0) {
+            fprintf(stderr, "ERROR: could not write to socket");
+            logger_write("ERROR: could not write to socket");
+            exit(1);
+        }
+        current_node = current_node->next;
+    }
+
+    printf(quit_message);
+    logger_write(quit_message);
+    pthread_exit(0);
 }
 
 int commands_JOIN(char *channel, struct Client *client) {

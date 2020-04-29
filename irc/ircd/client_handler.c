@@ -43,7 +43,12 @@ struct Client* client_handler_findClient(char *nick_name, struct LinkedListNode 
     struct Client *client = node->data;
     while (node != NULL && strcmp(client->nick, nick_name) != 0) {
         node = node->next;
-        client = node->data;
+        if (node != NULL) {
+            client = node->data;
+        } else {
+            client = NULL;
+        }
+
     }
     return client;
 }

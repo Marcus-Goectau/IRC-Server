@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "client_handler.h"
+#include "linked_list.h"
 #include <string.h>
 
 /// accepts a new client connection, adds the new client struct to the list of clients
@@ -31,4 +32,18 @@ struct Client* client_handler_getClientConnection(int server_socket, struct sock
     strcpy(new_client->full_name, client_name);
 
     return new_client;
+}
+
+/// searches for a client in the list of clients by nick name
+/// \param nick_name: nick name of the target client to find
+/// \return: client with the specified nick name
+struct Client* client_handler_findClient(char *nick_name, struct LinkedListNode *head) {
+    nick_name[strlen(nick_name) - 1] = '\0';
+    struct LinkedListNode *node = head;
+    struct Client *client = node->data;
+    while (node != NULL && strcmp(client->nick, nick_name) != 0) {
+        node = node->next;
+        client = node->data;
+    }
+    return client;
 }

@@ -196,7 +196,7 @@ void* communicate(void* arg) {
             strcpy(command, buffer+1);
 
             pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
-            command_status = commands_getCommand(command, new_client);
+            command_status = commands_getCommand(command, new_client);  // call the right command based off client message
             commands_checkCommandStatus(command_status, new_client);
             pthread_mutex_unlock(&client_handler_connections_mutex); // unlock critical region
 
@@ -209,7 +209,7 @@ void* communicate(void* arg) {
             while(node != NULL) {
                 client = node->data;
                 if (client->client_fd == new_client_socket) {
-                    strcat(sender, client->nick);
+                    strcat(sender, client->nick);   // get the name of the sender of a message
                 }
                 node = node->next;
             }

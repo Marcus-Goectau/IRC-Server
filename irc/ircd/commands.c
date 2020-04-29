@@ -4,7 +4,7 @@
  * Written by: Marcus Goeckner
  * 4/26/2020
  *
- * support for command messages sent by clients
+ * support for interpreting command messages sent by clients
 */
 
 #include <stdlib.h>
@@ -20,7 +20,7 @@
 /// parses command from messages sent from clients and calls appropriate function
 /// \param command: command and arguments to be parsed
 /// \param client: client who sent the command
-/// \return: -1 on fail to get command and 0 if successful
+/// \return: exit code depending on the command being called
 int commands_getCommand(char *command, struct Client *client) {
 
     char arguments[100];
@@ -75,7 +75,7 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
             write(client->client_fd, "You need to have op status to raise the op status of another user.\n", 100);
         } else if (command_status == -3) {
             sprintf(buffer,
-                    "ERROR: %s tried to raise the op status of another client, but a client with that nick name does not exist.\n",
+                    "ERROR: %s tried to raise the op status of another client, but a client with the input nick name does not exist.\n",
                     client->nick);
             logger_write(buffer);
             printf(buffer);
@@ -84,6 +84,10 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
     }
 }
 
+/// changes the nick name of the client who calls this command
+/// \param nick: new nick name of this client
+/// \param client: the client whos nick name is being changed
+/// \return: exit code
 int commands_NICK(char *nick, struct Client *client) {
     nick[strlen(nick) - 1] = '\0';
     client->nick = malloc(strlen(nick) + 1);
@@ -91,6 +95,10 @@ int commands_NICK(char *nick, struct Client *client) {
     return 0;
 }
 
+/// changes the full name of the client who calls this command
+/// \param full_name: new full name of this client
+/// \param client: the client whos full name is being changed
+/// \return: exit code
 int commands_USER(char *full_name, struct Client *client) {
     full_name[strlen(full_name) - 1] = '\0';
     client->nick = malloc(strlen(full_name) + 1);
@@ -98,6 +106,10 @@ int commands_USER(char *full_name, struct Client *client) {
     return 0;
 }
 
+/// elevates the op status of another user if the client calling this command has op status
+/// \param user: the nick name of the user to raise the op status of
+/// \param client: the client performing the op status change
+/// \return: exit code
 int commands_OPER(char *user, struct Client *client) {
     if (client->is_op != 1) {
         return -2;
@@ -110,8 +122,9 @@ int commands_OPER(char *user, struct Client *client) {
     return -3;
 }
 
+
 int commands_QUIT(char *message, struct Client *client) {
-    return 0;
+
 }
 
 int commands_JOIN(char *channel, struct Client *client) {

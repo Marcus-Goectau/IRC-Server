@@ -123,6 +123,13 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
             logger_write(buffer);
             printf(buffer);
             write(client->client_fd, "That full name is already in use.\n", 100);
+        } else if (command_status == -10) {
+            sprintf(buffer,
+                    "ERR_NOSUCHCHANNEL: %s tried to leave a channel they aren't in.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "You are not in a channel with that name.\n", 100);
         }
     }
 }
@@ -230,17 +237,19 @@ int commands_JOIN(char *channel, struct Client *client) {
     if (client->channel != NULL) {
         return -6;
     }
-
+    char log_message[256];
+    char channel_message[256];
+    char user[256];
     if (channel_list_head == NULL) {
         struct Channel *new_channel = channel_create(channel, "Topic"); // create a new channel if no channels are present
         linked_list_push(&channel_list_head, new_channel);
         linked_list_push(&new_channel->subscriber_list_head, client);
         channel_num_channels = linked_list_size(channel_list_head);
         client->channel = new_channel;
-        char channel_message[256];
+        bzero(channel_message, 256);
         sprintf(channel_message, "You have created and joined the channel: %s\n", channel);
         write(client->client_fd, channel_message, 256);
-        char log_message[256];
+        bzero(log_message, 256);
         sprintf(log_message, "%s has created a channel: %s\n\n", client->nick, channel);
         fprintf(stdout,"%s", log_message);
         logger_write(log_message);
@@ -250,6 +259,7 @@ int commands_JOIN(char *channel, struct Client *client) {
         struct Channel *current_channel = node->data;
         while (node != NULL && strcmp(current_channel->name, channel) != 0) {   // find the channel to join
             node = node->next;
+            if (node != NULL)
             current_channel = node->data;
         }
         if (node == NULL) { // channel doesnt exist yet
@@ -258,11 +268,11 @@ int commands_JOIN(char *channel, struct Client *client) {
             linked_list_push(&new_channel->subscriber_list_head, client);
             channel_num_channels = linked_list_size(channel_list_head);
             client->channel = new_channel;
-            char channel_message[256];
-            sprintf(channel_message, "You have created and joined the channel: %s", channel);
-            char log_message[256];
-            sprintf(log_message, "%s has created a channel: %s", client->nick, channel);
-            printf("%s", log_message);
+            bzero(channel_message, 256);
+            sprintf(channel_message, "You have created and joined the channel: %s\n", channel);
+            bzero(log_message, 256);
+            sprintf(log_message, "%s has created a channel: %s\n\n", client->nick, channel);
+            fprintf(stdout,"%s", log_message);
             logger_write(log_message);
             write(client->client_fd, channel_message, 256);
         } else {
@@ -276,13 +286,13 @@ int commands_JOIN(char *channel, struct Client *client) {
                 current_node = current_node->next;
             }
             linked_list_push(&current_channel->subscriber_list_head, client); // add this client to this channel's list of clients
-            char channel_message[256];
-            char user[256];
+            bzero(channel_message, 256);
+            bzero(user, 256);
             sprintf(channel_message, "You have joined the channel: %s TOPIC: %s\nUsers in this channel:\n", channel, current_channel->topic);
             client->channel = current_channel;
             write(client->client_fd, channel_message, 256);
             struct LinkedListNode *node = current_channel->subscriber_list_head;
-            sprintf(channel_message, "%s hs joined the channel!", client->nick);
+            sprintf(channel_message, "%s has joined the channel!\n", client->nick);
             while (node != NULL) {
                 usleep(1000);
                 current_client = node->data;
@@ -305,22 +315,43 @@ int commands_JOIN(char *channel, struct Client *client) {
 /// \param client: client leaving the channel
 /// \return: exit code
 int commands_PART(char *channel, struct Client *client) {
+    channel[strlen(channel) - 1] = '\0';
     if (client->channel == NULL) {
         return -7;
+    } else if (strcmp(channel, client->channel->name) != 0) {
+        return -10;
     }
 
     struct Channel *current_channel = client->channel;
     if (linked_list_size(current_channel->subscriber_list_head) == 1) {
         client->channel = NULL;
         current_channel->subscriber_list_head = NULL;
-        write(client->client_fd, "You have left the channel.", 30);
+        write(client->client_fd, "You have left the channel.\n", 30);
+        struct LinkedListNode *channel_node = linked_list_get(channel_list_head, current_channel);
+        linked_list_delete(&channel_list_head, channel_node);
+        channel_num_channels = linked_list_size(channel_list_head);
         char channel_message[256];
-        sprintf(channel_message, "Channel %s has been destroyed since there are no clients in it.", channel);
+        sprintf(channel_message, "Channel %s has been destroyed since there are no clients in it.\n", channel);
         logger_write(channel_message);
         fprintf(stdout, channel_message);
     } else {
         client->channel = NULL;
-        struct LinkedListNode *node = linked_list_get()
+        struct LinkedListNode *node = linked_list_get(current_channel->subscriber_list_head, client);
+        linked_list_delete(&current_channel->subscriber_list_head, node);
+        write(client->client_fd, "You have left the channel.\n", 30);
+        char channel_message[256];
+        sprintf(channel_message, "%s has left the channel.\n", client->nick);
+        node = current_channel->subscriber_list_head;
+        struct Client *current_client;
+        while (node != NULL) {
+            current_client = node->data;
+            if (current_client->client_fd != client->client_fd) {
+                write(current_client->client_fd, channel_message, 256);
+            }
+            node = node->next;
+        }
+        logger_write(channel_message);
+        fprintf(stdout, channel_message);
     }
 
     return 0;

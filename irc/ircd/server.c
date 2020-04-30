@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 
     // allow immediate reuse of this port
     if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int)) < 0) {
-        error("ERROR: setsockopt(SO_REUSEADDR) failed\n");
+        error("ERROR: setsockopt(SO_REUSEPORT) failed\n");
     }
 
 	// bind the socket to the specified IP address and port
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 	while(client_handler_num_connections <= client_handler_max_connections) {
 		// accept connections on the server socket and create new threads
 		// to deal with clients
-		struct Client *new_client = client_handler_getClientConnection(server_socket, (struct sockaddr *) &client_address, &client_len);
+		struct Client *new_client = client_handler_getClientConnection(server_socket, &client_address, client_len);
 
 		// Add new client to running list of clients
 		linked_list_push(&client_list_head, new_client);

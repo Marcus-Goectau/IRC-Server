@@ -16,7 +16,7 @@
 void linked_list_push(struct LinkedListNode **head, void *data) {
     struct LinkedListNode *new_node = (struct LinkedListNode*)malloc(sizeof(struct LinkedListNode));
     new_node->data = data;
-    new_node->next = *head;
+    new_node->next = (*head);
     *head = new_node; // set this node to be the be current head
 }
 
@@ -53,15 +53,14 @@ struct LinkedListNode* linked_list_get(struct LinkedListNode *head, void *data) 
 /// \param node: node to delete
 void linked_list_delete(struct LinkedListNode **head, struct LinkedListNode *node) {
     struct LinkedListNode *currentNode = *head, *prev;
-
-    if (currentNode != NULL && currentNode == node) {
+    if (currentNode != NULL && currentNode->data == node->data) {
         *head = currentNode->next;
         free(currentNode);
         return;
     }
 
     // search for node to be deleted
-    while (currentNode != NULL && currentNode->next != node) {
+    while (currentNode != NULL && currentNode->data != node->data) {
         prev = currentNode;
         currentNode = currentNode->next;
     }
@@ -69,6 +68,7 @@ void linked_list_delete(struct LinkedListNode **head, struct LinkedListNode *nod
     if (currentNode == NULL) {
         return;
     }
+
 
     prev->next = currentNode->next; // unlink node from list
     free(currentNode);

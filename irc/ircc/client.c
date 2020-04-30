@@ -40,6 +40,16 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
+    // allow immediate reuse of this address
+    if (setsockopt(client_socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
+        printf("ERROR: setsockopt(SO_REUSEADDR) failed\n");
+    }
+
+    // allow immediate reuse of this port
+    if (setsockopt(client_socket, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int)) < 0) {
+        printf("ERROR: setsockopt(SO_REUSEPORT) failed\n");
+    }
+
 	// struct to store information about the host
 	struct hostent *server;
 	server = gethostbyname(argv[1]);

@@ -12,6 +12,7 @@
 
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include "channel.h"
 #include "linked_list.h"
 
 struct Client {
@@ -22,7 +23,7 @@ struct Client {
     int is_op; // boolean
     char *nick;
     char *full_name;
-    int in_channel; // boolean
+    struct Channel *channel; // boolean
 };
 
 struct Client* client_handler_getClientConnection(int server_socket, struct sockaddr_in *client_address, int client_address_len);

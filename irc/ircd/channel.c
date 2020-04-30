@@ -7,7 +7,7 @@
  * Data structure to handle channels and their components
 */
 
-# include <stdlib.h>
+#include <stdlib.h>
 #include <string.h>
 #include "channel.h"
 

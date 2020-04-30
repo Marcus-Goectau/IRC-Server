@@ -167,7 +167,7 @@ void* communicate(void* arg) {
             pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
             while (node != NULL) {
                 client = node->data;
-                if (client->client_fd != new_client_socket ) {
+                if (client->client_fd != new_client_socket && client->channel == new_client->channel) {
                     conn_status = write(client->client_fd, error_message, 100); // write disconnect message to clients
                 }
                 if (conn_status < 0) {
@@ -208,10 +208,10 @@ void* communicate(void* arg) {
             // Loop through list of clients and broadcast received messages to all other clients
             while(node != NULL) {
                 client = node->data;
-                if (client->client_fd != new_client_socket) {
+                if (client->client_fd != new_client_socket && client->channel == new_client->channel && client->channel != NULL) {
                     conn_status = write(client->client_fd, &sender, 255);
                 }
-                if (client->client_fd != new_client_socket) {
+                if (client->client_fd != new_client_socket && client->channel == new_client->channel && client->channel != NULL) {
                     conn_status = write(client->client_fd, &buffer, 255);
                 }
                 if (conn_status < 0) {

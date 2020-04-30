@@ -30,6 +30,7 @@ struct Client* client_handler_getClientConnection(int server_socket, struct sock
     new_client->full_name = malloc(strlen(client_name) + 1);
     strcpy(new_client->nick, client_name);
     strcpy(new_client->full_name, client_name);
+    new_client->channel = NULL;
 
     return new_client;
 }

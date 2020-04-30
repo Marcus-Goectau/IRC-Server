@@ -37,7 +37,7 @@ struct LinkedListNode* linked_list_get(struct LinkedListNode *head, void *data) 
     }
 
     struct LinkedListNode *current_node = head;
-    while (current_node->data != data && current_node != NULL) { // search the list for the node containing data
+    while (current_node != NULL && current_node->data != data) { // search the list for the node containing data
         current_node = current_node->next;
     }
 

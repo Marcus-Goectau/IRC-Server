@@ -188,7 +188,7 @@ int commands_JOIN(char *channel, struct Client *client) {
         return -4;
     }
 
-    if (client->in_channel == 1) {
+    if (client->channel != NULL) {
         return -6;
     }
 
@@ -197,7 +197,7 @@ int commands_JOIN(char *channel, struct Client *client) {
         linked_list_push(&channel_list_head, new_channel);
         linked_list_push(&new_channel->subscriber_list_head, client);
         channel_num_channels = linked_list_size(channel_list_head);
-        client->in_channel = 1;
+        client->channel = new_channel;
         char channel_message[256];
         sprintf(channel_message, "You have created and joined the channel: %s\n", channel);
         write(client->client_fd, channel_message, 256);
@@ -218,7 +218,7 @@ int commands_JOIN(char *channel, struct Client *client) {
             linked_list_push(&channel_list_head, new_channel);
             linked_list_push(&new_channel->subscriber_list_head, client);
             channel_num_channels = linked_list_size(channel_list_head);
-            client->in_channel = 1;
+            client->channel = new_channel;
             char channel_message[256];
             sprintf(channel_message, "You have created and joined the channel: %s", channel);
             char log_message[256];
@@ -240,15 +240,19 @@ int commands_JOIN(char *channel, struct Client *client) {
             char channel_message[256];
             char user[256];
             sprintf(channel_message, "You have joined the channel: %s TOPIC: %s\nUsers in this channel:\n", channel, current_channel->topic);
-            client->in_channel = 1;
+            client->channel = current_channel;
             write(client->client_fd, channel_message, 256);
             struct LinkedListNode *node = current_channel->subscriber_list_head;
+            sprintf(channel_message, "%s hs joined the channel!", client->nick);
             while (node != NULL) {
                 usleep(1000);
                 current_client = node->data;
                 bzero(user, 256);
                 sprintf(user, "%s", current_client->nick);
                 write(client->client_fd, user, 256);
+                if (current_client->client_fd != client->client_fd) {
+                    write(current_client->client_fd, channel_message, 256); // write join message to other clients in channel
+                }
                 node = node->next;
             }
         }

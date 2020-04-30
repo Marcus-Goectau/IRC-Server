@@ -69,39 +69,60 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
             write(client->client_fd, "Invalid command format. Use /help for command help.\n", 50);
         } else if (command_status == -2) {
             sprintf(buffer,
-                    "ERROR: %s tried to raise the op status of another client, but does not have privileges to do so.\n",
+                    "ERR_NOOPERHOST: %s tried to raise the op status of another client, but does not have privileges to do so.\n",
                     client->nick);
             logger_write(buffer);
             printf(buffer);
             write(client->client_fd, "You need to have op status to raise the op status of another user.\n", 70);
         } else if (command_status == -3) {
             sprintf(buffer,
-                    "ERROR: %s tried to raise the op status of another client, but a client with the input nick name does not exist.\n",
+                    "ERR_NONICK: %s tried to raise the op status of another client, but a client with the input nick name does not exist.\n",
                     client->nick);
             logger_write(buffer);
             printf(buffer);
             write(client->client_fd, "There is no user with that nick name.\n", 40);
         } else if (command_status == -4) {
             sprintf(buffer,
-                   "ERROR: %s tried to create a channel, but the channel name did not start with \'#\'.\n",
+                   "ERR_INVALIDCHANFORMAT: %s tried to create a channel, but the channel name did not start with \'#\'.\n",
                    client->nick);
             logger_write(buffer);
             printf(buffer);
             write(client->client_fd, "Channel names must start with \'#\' and contain no spaces.\n", 70);
         } else if (command_status == -5) {
             sprintf(buffer,
-                    "ERROR: %s tried to join a channel that they are already in.\n",
+                    "ERR_INCHAN: %s tried to join a channel that they are already in.\n",
                     client->nick);
             logger_write(buffer);
             printf(buffer);
             write(client->client_fd, "You cannot join a channel you are already in.\n", 50);
-        } else if (command_status = -6) {
+        } else if (command_status == -6) {
             sprintf(buffer,
-                    "ERROR: %s tried to join a channel, but are they already in a channel.\n",
+                    "ERR_INCHAN: %s tried to join a channel, but are they already in a channel.\n",
                     client->nick);
             logger_write(buffer);
             printf(buffer);
             write(client->client_fd, "You must leave your current channel before joining another one. (use /part)\n", 100);
+        } else if (command_status == -7) {
+            sprintf(buffer,
+                    "ERR_NOSUCHCHANNEL: %s tried to leave a channel, but are they are not in a channel.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "You are not in a channel.\n", 100);
+        } else if (command_status == -8) {
+            sprintf(buffer,
+                    "ERR_NICKNAMEINUSE: %s tried to change their nick name, but the requested name was already taken.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "That nick name is already in use.\n", 100);
+        } else if (command_status == -9) {
+            sprintf(buffer,
+                    "ERR_ALREADYREGISTERED: %s tried to change their full name, but the requested name was already taken.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "That full name is already in use.\n", 100);
         }
     }
 }
@@ -112,6 +133,15 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
 /// \return: exit code
 int commands_NICK(char *nick, struct Client *client) {
     nick[strlen(nick) - 1] = '\0';
+    struct LinkedListNode *node = client_list_head;
+    struct Client *current_client;
+    while (node != NULL) {
+        current_client = node->data;
+        if (strcmp(current_client->nick, nick) == 0) {
+            return -8;
+        }
+        node = node->next;
+    }
     client->nick = malloc(strlen(nick) + 1);
     strcpy(client->nick, nick);
     return 0;
@@ -119,10 +149,19 @@ int commands_NICK(char *nick, struct Client *client) {
 
 /// changes the full name of the client who calls this command
 /// \param full_name: new full name of this client
-/// \param client: the client whos full name is being changed
+/// \param client: the client whose full name is being changed
 /// \return: exit code
 int commands_USER(char *full_name, struct Client *client) {
     full_name[strlen(full_name) - 1] = '\0';
+    struct LinkedListNode *node = client_list_head;
+    struct Client *current_client;
+    while (node != NULL) {
+        current_client = node->data;
+        if (strcmp(current_client->full_name, full_name) == 0) {
+            return -9;
+        }
+        node = node->next;
+    }
     client->nick = malloc(strlen(full_name) + 1);
     strcpy(client->full_name, full_name);
     return 0;
@@ -236,7 +275,7 @@ int commands_JOIN(char *channel, struct Client *client) {
                 }
                 current_node = current_node->next;
             }
-            linked_list_push(&current_channel->subscriber_list_head, client);
+            linked_list_push(&current_channel->subscriber_list_head, client); // add this client to this channel's list of clients
             char channel_message[256];
             char user[256];
             sprintf(channel_message, "You have joined the channel: %s TOPIC: %s\nUsers in this channel:\n", channel, current_channel->topic);
@@ -261,7 +300,29 @@ int commands_JOIN(char *channel, struct Client *client) {
     return 0;
 }
 
+/// allows the client to leave a channel
+/// \param channel: name of the channel to leave
+/// \param client: client leaving the channel
+/// \return: exit code
 int commands_PART(char *channel, struct Client *client) {
+    if (client->channel == NULL) {
+        return -7;
+    }
+
+    struct Channel *current_channel = client->channel;
+    if (linked_list_size(current_channel->subscriber_list_head) == 1) {
+        client->channel = NULL;
+        current_channel->subscriber_list_head = NULL;
+        write(client->client_fd, "You have left the channel.", 30);
+        char channel_message[256];
+        sprintf(channel_message, "Channel %s has been destroyed since there are no clients in it.", channel);
+        logger_write(channel_message);
+        fprintf(stdout, channel_message);
+    } else {
+        client->channel = NULL;
+        struct LinkedListNode *node = linked_list_get()
+    }
+
     return 0;
 }
 

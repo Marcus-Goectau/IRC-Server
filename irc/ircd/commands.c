@@ -73,10 +73,24 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
                     client->nick);
             logger_write(buffer);
             printf(buffer);
-            write(client->client_fd, "You need to have op status to raise the op status of another user.\n", 100);
+            write(client->client_fd, "You need to have op status to raise the op status of another user.\n", 70);
         } else if (command_status == -3) {
             sprintf(buffer,
                     "ERROR: %s tried to raise the op status of another client, but a client with the input nick name does not exist.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "There is no user with that nick name.\n", 40);
+        } else if (command_status == -4) {
+            sprintf(buffer,
+                   "ERROR: %s tried to create a channel, but the channel name did not start with \'#\'.\n",
+                   client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "Channel names must start with \'#\' and contain no spaces.\n", 70);
+        } else if (command_status == -5) {
+            sprintf(buffer,
+                    "ERROR: %s tried to join a channel that they are already in.\n",
                     client->nick);
             logger_write(buffer);
             printf(buffer);
@@ -135,7 +149,7 @@ int commands_QUIT(char *message, struct Client *client) {
     linked_list_delete(&client_list_head, node);    // remove client from list of clients
     client_handler_num_connections = linked_list_size(client_list_head);
 
-    sprintf(quit_message, "%s has disconnected: %s\n\n", client->nick, message);
+    sprintf(quit_message, "%s has left: %s\n\n", client->nick, message);
     struct LinkedListNode *current_node = client_list_head;
     struct Client *current_client;
 
@@ -151,12 +165,85 @@ int commands_QUIT(char *message, struct Client *client) {
         current_node = current_node->next;
     }
 
-    printf(quit_message);
+    printf("%s", quit_message);
     logger_write(quit_message);
     pthread_exit(0);
 }
 
+/// joins a channel on the server by name (a new channel is created if no channel with the requested name is found)
+/// \param channel: name of the channel to join
+/// \param client: the client trying to join a channel
+/// \return: exit code
 int commands_JOIN(char *channel, struct Client *client) {
+
+    channel[strlen(channel) - 1] = '\0';
+    if (strncmp(channel, "#", 1) != 0) {
+        return -4;
+    }
+
+    if (channel_list_head == NULL) {
+        struct Channel *new_channel = channel_create(channel, "Topic"); // create a new channel if no channels are present
+        struct LinkedListNode *client_node = malloc(sizeof(struct LinkedListNode));
+        client_node->data = client;
+        client_node->next = NULL;
+        new_channel->subscriber_list_head = client_node;
+        struct LinkedListNode *channel_node = malloc(sizeof(struct LinkedListNode));
+        channel_node->data = new_channel;
+        channel_list_head = channel_node;
+        channel_num_channels = linked_list_size(channel_list_head);
+        char channel_message[256];
+        sprintf(channel_message, "You have created and joined the channel: %s\n", channel);
+        write(client->client_fd, channel_message, 256);
+        char log_message[256];
+        sprintf(log_message, "%s has created a channel: %s\n\n", client->nick, channel);
+        fprintf(stdout,"%s", log_message);
+        logger_write(log_message);
+        return 0;
+    } else {
+        struct LinkedListNode *node = channel_list_head;
+        struct Channel *current_channel = node->data;
+        while (node != NULL && strcmp(current_channel->name, channel) != 0) {   // find the channel to join
+            node = node->next;
+            current_channel = node->data;
+        }
+        if (node == NULL) { // channel doesnt exist yet
+            struct Channel *new_channel = channel_create(channel, "Topic"); // create a new channel if no channel with requested name is present
+            linked_list_push(&channel_list_head, new_channel);
+            linked_list_push(&new_channel->subscriber_list_head, client);
+            channel_num_channels = linked_list_size(channel_list_head);
+            char channel_message[256];
+            sprintf(channel_message, "You have created and joined the channel: %s", channel);
+            char log_message[256];
+            sprintf(log_message, "%s has created a channel: %s", client->nick, channel);
+            printf("%s", log_message);
+            logger_write(log_message);
+            write(client->client_fd, channel_message, 256);
+        } else {
+            struct LinkedListNode *current_node = current_channel->subscriber_list_head;
+            struct Client *current_client;
+            while (current_node != NULL) {
+                current_client = current_node->data;
+                if (strcmp(current_client->nick, client->nick) == 0) {  // check if this client is already in this channel
+                    return -5;
+                }
+                current_node = current_node->next;
+            }
+            linked_list_push(&current_channel->subscriber_list_head, client);
+            char channel_message[256];
+            char user[256];
+            sprintf(channel_message, "You have joined the channel: %s TOPIC: %s\nUsers in this channel:\n", channel, current_channel->topic);
+            write(client->client_fd, channel_message, 256);
+            struct LinkedListNode *node = current_channel->subscriber_list_head;
+            while (node != NULL) {
+                current_client = node->data;
+                bzero(user, 256);
+                sprintf(user, "%s\n", current_client->nick);
+                write(client->client_fd, user, 256);
+                node = node->next;
+            }
+        }
+    }
+
     return 0;
 }
 
@@ -176,11 +263,11 @@ int commands_TOPIC(char *channel, char *topic, struct Client *client) {
     return 0;
 }
 
-int commands_NAMES(char *channel) {
+int commands_NAMES(char *channel, struct Client *client) {
     return 0;
 }
 
-int commands_LIST() {
+int commands_LIST(struct Client *client) {
     return 0;
 }
 

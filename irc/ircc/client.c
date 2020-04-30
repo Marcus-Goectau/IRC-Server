@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     pthread_t thread;
     pthread_create(&thread, NULL, listenForMessages, (void *)client_socket);
 
-    printf("Welcome to the server! Begin chatting! Type /help for command list\n");
+    printf("Welcome to the server! Join a channel to begin chatting! Type /help for full command list\n");
 	// write to the server
 	while (conn_status >= 0) {
 		bzero(buffer_write, 256);

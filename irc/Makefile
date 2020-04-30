@@ -1,5 +1,5 @@
 #file to compile irc project source code files
-#once compiled, run server and client executables in this directory for testing
+#once compiled, run server and client executables in this directory (same directory as Makefile) for testing
 
 all : server client
 

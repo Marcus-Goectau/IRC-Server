@@ -111,17 +111,8 @@ int main(int argc, char *argv[]) {
 		struct Client *new_client = client_handler_getClientConnection(server_socket, (struct sockaddr *) &client_address, &client_len);
 
 		// Add new client to running list of clients
-		if (linked_list_size(client_list_head) == 0) {
-            client_list_head = (struct LinkedListNode*) malloc(sizeof(struct LinkedListNode));
-            client_list_head->data = new_client;
-            client_list_head->next = NULL;
-            new_client->is_op = 1;
-            new_client->nick = "Client 0";
-            new_client->full_name = "Client 0";
-		} else {
-            linked_list_push(&client_list_head, new_client);
+		linked_list_push(&client_list_head, new_client);
 
-        }
         client_handler_num_connections = linked_list_size(client_list_head);
 
 		if (new_client->client_fd < 0) {
@@ -155,7 +146,7 @@ void* communicate(void* arg) {
 	while(conn_status >= 0) {
 		bzero(buffer, client_handler_buffer_size);
 		bzero(sender, 256);
-		sprintf(sender, "Message From ");
+		sprintf(sender, "Message From: ");
 		conn_status = read(new_client_socket, buffer, client_handler_buffer_size - 1);
 		if (conn_status < 0) {
 			error("ERROR: could not read from socket\n");
@@ -176,7 +167,7 @@ void* communicate(void* arg) {
             pthread_mutex_lock(&client_handler_connections_mutex); // lock critical region
             while (node != NULL) {
                 client = node->data;
-                if (client->client_fd != new_client_socket) {
+                if (client->client_fd != new_client_socket ) {
                     conn_status = write(client->client_fd, error_message, 100); // write disconnect message to clients
                 }
                 if (conn_status < 0) {

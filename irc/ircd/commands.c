@@ -94,7 +94,14 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
                     client->nick);
             logger_write(buffer);
             printf(buffer);
-            write(client->client_fd, "There is no user with that nick name.\n", 50);
+            write(client->client_fd, "You cannot join a channel you are already in.\n", 50);
+        } else if (command_status = -6) {
+            sprintf(buffer,
+                    "ERROR: %s tried to join a channel, but are they already in a channel.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "You must leave your current channel before joining another one. (use /part)\n", 100);
         }
     }
 }
@@ -181,16 +188,16 @@ int commands_JOIN(char *channel, struct Client *client) {
         return -4;
     }
 
+    if (client->in_channel == 1) {
+        return -6;
+    }
+
     if (channel_list_head == NULL) {
         struct Channel *new_channel = channel_create(channel, "Topic"); // create a new channel if no channels are present
-        struct LinkedListNode *client_node = malloc(sizeof(struct LinkedListNode));
-        client_node->data = client;
-        client_node->next = NULL;
-        new_channel->subscriber_list_head = client_node;
-        struct LinkedListNode *channel_node = malloc(sizeof(struct LinkedListNode));
-        channel_node->data = new_channel;
-        channel_list_head = channel_node;
+        linked_list_push(&channel_list_head, new_channel);
+        linked_list_push(&new_channel->subscriber_list_head, client);
         channel_num_channels = linked_list_size(channel_list_head);
+        client->in_channel = 1;
         char channel_message[256];
         sprintf(channel_message, "You have created and joined the channel: %s\n", channel);
         write(client->client_fd, channel_message, 256);
@@ -211,6 +218,7 @@ int commands_JOIN(char *channel, struct Client *client) {
             linked_list_push(&channel_list_head, new_channel);
             linked_list_push(&new_channel->subscriber_list_head, client);
             channel_num_channels = linked_list_size(channel_list_head);
+            client->in_channel = 1;
             char channel_message[256];
             sprintf(channel_message, "You have created and joined the channel: %s", channel);
             char log_message[256];
@@ -232,12 +240,14 @@ int commands_JOIN(char *channel, struct Client *client) {
             char channel_message[256];
             char user[256];
             sprintf(channel_message, "You have joined the channel: %s TOPIC: %s\nUsers in this channel:\n", channel, current_channel->topic);
+            client->in_channel = 1;
             write(client->client_fd, channel_message, 256);
             struct LinkedListNode *node = current_channel->subscriber_list_head;
             while (node != NULL) {
+                usleep(1000);
                 current_client = node->data;
                 bzero(user, 256);
-                sprintf(user, "%s\n", current_client->nick);
+                sprintf(user, "%s", current_client->nick);
                 write(client->client_fd, user, 256);
                 node = node->next;
             }

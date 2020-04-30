@@ -12,11 +12,12 @@ include_directories(${IRC_C})
 
 set(
         SERVER_SOURCE_FILES
-            ${IRC_D}/linked_list.c ${IRC_D}/linked_list.h
-            ${IRC_D}/client_handler.c ${IRC_D}/client_handler.h
-            ${IRC_D}/channel.c ${IRC_D}/channel.h
-            ${IRC_D}/logger.c ${IRC_D}/logger.h
-            ${IRC_D}/config.c ${IRC_D}/config.h ircd/commands.c ircd/commands.h)
+        ${IRC_D}/linked_list.c ${IRC_D}/linked_list.h
+        ${IRC_D}/client_handler.c ${IRC_D}/client_handler.h
+        ${IRC_D}/channel.c ${IRC_D}/channel.h
+        ${IRC_D}/logger.c ${IRC_D}/logger.h
+        ${IRC_D}/config.c ${IRC_D}/config.h
+        ${IRC_D}/commands.c ${IRC_D}/commands.h)
 
 set(
         CLIENT_SOURCE_FILES

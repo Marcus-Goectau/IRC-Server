@@ -21,7 +21,7 @@ int commands_JOIN(char *channel, struct Client *client);
 int commands_PART(char *channel, struct Client *part);
 int commands_channel_MODE(char *channel, char mode);
 int commands_user_MODE(char *nick_name, char mode);
-int commands_TOPIC(char *channel, char *topic, struct Client *client);
+int commands_TOPIC(char *topic, struct Client *client);
 int commands_NAMES(char *channel, struct Client *client);
 int commands_LIST(struct Client *client);
 int commands_INVITE(char *nick_name, char *channel);

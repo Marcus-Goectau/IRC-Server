@@ -50,7 +50,7 @@ int commands_getCommand(char *command, struct Client *client) {
         return commands_PART(arguments, client);
     } else if (strncmp(command, "topic", 5) == 0) {
         strcpy(arguments, command + 6);
-        return commands_TOPIC(arguments, arguments, client); // need to figure out how to split arguments into two strings
+        return commands_TOPIC(arguments, client);
     }else {
         return -1;
     }
@@ -130,6 +130,27 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
             logger_write(buffer);
             printf(buffer);
             write(client->client_fd, "You are not in a channel with that name.\n", 100);
+        } else if (command_status == -11) {
+            sprintf(buffer,
+                    "ERR_CHANOPRIVSNEEDED: %s tried to change a channel topic, but they are not an op.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "You do not have OP privileges to change the topic.\n", 100);
+        } else if (command_status == -12) {
+            sprintf(buffer,
+                    "ERR_NOROPIC: %s tried to change a channel topic, but the channel topic can't be blank.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "The channel topic cannot be blank.\n", 100);
+        } else if (command_status == -13) {
+            sprintf(buffer,
+                    "ERR_NOTONCHANNEL: %s tried to change a channel topic, but they are not on that channel.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "You can't change the topic of a channel you are not in.\n", 100);
         }
     }
 }
@@ -241,6 +262,7 @@ int commands_JOIN(char *channel, struct Client *client) {
     char channel_message[256];
     char user[256];
     if (channel_list_head == NULL) {
+        client->is_op = 1;
         struct Channel *new_channel = channel_create(channel, "Topic"); // create a new channel if no channels are present
         linked_list_push(&channel_list_head, new_channel);
         linked_list_push(&new_channel->subscriber_list_head, client);
@@ -251,7 +273,7 @@ int commands_JOIN(char *channel, struct Client *client) {
         write(client->client_fd, channel_message, 256);
         bzero(log_message, 256);
         sprintf(log_message, "%s has created a channel: %s\n\n", client->nick, channel);
-        fprintf(stdout,"%s", log_message);
+        fprintf(stdout,"%s\n", log_message);
         logger_write(log_message);
         return 0;
     } else {
@@ -263,6 +285,7 @@ int commands_JOIN(char *channel, struct Client *client) {
             current_channel = node->data;
         }
         if (node == NULL) { // channel doesnt exist yet
+            client->is_op = 1;
             struct Channel *new_channel = channel_create(channel, "Topic"); // create a new channel if no channel with requested name is present
             linked_list_push(&channel_list_head, new_channel);
             linked_list_push(&new_channel->subscriber_list_head, client);
@@ -272,7 +295,7 @@ int commands_JOIN(char *channel, struct Client *client) {
             sprintf(channel_message, "You have created and joined the channel: %s\n", channel);
             bzero(log_message, 256);
             sprintf(log_message, "%s has created a channel: %s\n\n", client->nick, channel);
-            fprintf(stdout,"%s", log_message);
+            fprintf(stdout,"%s\n", log_message);
             logger_write(log_message);
             write(client->client_fd, channel_message, 256);
         } else {
@@ -288,7 +311,7 @@ int commands_JOIN(char *channel, struct Client *client) {
             linked_list_push(&current_channel->subscriber_list_head, client); // add this client to this channel's list of clients
             bzero(channel_message, 256);
             bzero(user, 256);
-            sprintf(channel_message, "You have joined the channel: %s TOPIC: %s\nUsers in this channel:\n", channel, current_channel->topic);
+            sprintf(channel_message, "You have joined the channel: %s TOPIC: \"%s\"\nUsers in this channel:\n", channel, current_channel->topic);
             client->channel = current_channel;
             write(client->client_fd, channel_message, 256);
             struct LinkedListNode *node = current_channel->subscriber_list_head;
@@ -297,7 +320,7 @@ int commands_JOIN(char *channel, struct Client *client) {
                 usleep(1000);
                 current_client = node->data;
                 bzero(user, 256);
-                sprintf(user, "%s", current_client->nick);
+                sprintf(user, "%s\n", current_client->nick);
                 write(client->client_fd, user, 256);
                 if (current_client->client_fd != client->client_fd) {
                     write(current_client->client_fd, channel_message, 256); // write join message to other clients in channel
@@ -324,7 +347,7 @@ int commands_PART(char *channel, struct Client *client) {
 
     struct Channel *current_channel = client->channel;
     if (linked_list_size(current_channel->subscriber_list_head) == 1) {
-        client->channel = NULL;
+        client->channel = NULL;     // set this client's channel to NULL
         current_channel->subscriber_list_head = NULL;
         write(client->client_fd, "You have left the channel.\n", 30);
         struct LinkedListNode *channel_node = linked_list_get(channel_list_head, current_channel);
@@ -332,6 +355,7 @@ int commands_PART(char *channel, struct Client *client) {
         channel_num_channels = linked_list_size(channel_list_head);
         char channel_message[256];
         sprintf(channel_message, "Channel %s has been destroyed since there are no clients in it.\n", channel);
+        client->is_op = 0;  // remove op privileges
         logger_write(channel_message);
         fprintf(stdout, channel_message);
     } else {
@@ -341,17 +365,18 @@ int commands_PART(char *channel, struct Client *client) {
         write(client->client_fd, "You have left the channel.\n", 30);
         char channel_message[256];
         sprintf(channel_message, "%s has left the channel.\n", client->nick);
+        client->is_op = 0;  // remove op privileges
         node = current_channel->subscriber_list_head;
         struct Client *current_client;
         while (node != NULL) {
             current_client = node->data;
             if (current_client->client_fd != client->client_fd) {
-                write(current_client->client_fd, channel_message, 256);
+                write(current_client->client_fd, channel_message, 256); // notify others in channel who has left
             }
             node = node->next;
         }
         logger_write(channel_message);
-        fprintf(stdout, channel_message);
+        fprintf(stdout, "%s\n", channel_message);
     }
 
     return 0;
@@ -365,7 +390,32 @@ int commands_user_MODE(char *nick_name, char mode) {
     return 0;
 }
 
-int commands_TOPIC(char *channel, char *topic, struct Client *client) {
+/// changes the topic of the channel the client is in
+/// \param topic: new topic of the channel
+/// \param client: client changing the topic
+/// \return: exit code
+int commands_TOPIC(char *topic, struct Client *client) {
+    topic[strlen(topic) - 1] = '\0';
+    if (client->is_op != 1) {
+        return -11;
+    } else if (strcmp(topic, "") == 0) {
+        return -12;
+    } else if (client->channel == NULL) {
+        return -13;
+    }
+    char channel_message[256];
+    sprintf(channel_message, "%s has changed the channel topic to: \"%s\"\n\n", client->nick, topic);
+    client->channel->topic = topic;
+    struct Channel *current_channel = client->channel;
+    struct LinkedListNode *node = current_channel->subscriber_list_head;
+    struct Client *current_client;
+    while(node != NULL) {
+        current_client = node->data;
+        write(current_client->client_fd, channel_message, 256);
+        node = node->next;
+    }
+    fprintf(stdout, "%s\n", channel_message);
+    logger_write(channel_message);
     return 0;
 }
 

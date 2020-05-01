@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 		fgets(buffer_write, 255, stdin);
 		if (strncmp(buffer_write, "/help", 5) == 0) {
 		    printf("Current command list:\n/nick (nick_name)\n/user (user_name) (real_name)\n/oper (user)\n/quit (message)\n/join (channel_name)\n"
-             "/part (channel_name)\n/mode (nick) (mode_flag)\n/topic (channel_name) (topic)\n/names (channel_name)\n/list\n/kick (channel_name) (user)\n"
+             "/part (channel_name)\n/mode (nick) (mode_flag)\n/topic (topic)\n/names (channel_name)\n/list\n/kick (channel_name) (user)\n"
              "/privmsg (nick) (message)\n");
 		} else {
             conn_status = write(client_socket, buffer_write, strlen(buffer_write));

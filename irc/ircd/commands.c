@@ -56,6 +56,9 @@ int commands_getCommand(char *command, struct Client *client) {
         return commands_NAMES(arguments, client);
     } else if (strncmp(command, "list", 4) == 0) {
         return commands_LIST(client);
+    } else if (strncmp(command, "kick", 4) == 0){
+        strcpy(arguments, command + 5);
+        return commands_KICK(arguments, client);
     } else {
         return -1;
     }
@@ -163,6 +166,13 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
             logger_write(buffer);
             printf("%s", buffer);
             write(client->client_fd, "There is no channel with that name.\n", 100);
+        } else if (command_status == -15) {
+            sprintf(buffer,
+                    "ERR_CHANOPRIVSNEEDED: %s tried to kick a user from their channel, but they do not have OP permissions.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf("%s", buffer);
+            write(client->client_fd, "You need OP permissions to kick another user.\n", 100);
         }
     }
 }
@@ -507,8 +517,10 @@ int commands_INVITE(char *nick_name, char *channel) {
     return 0;
 }
 
-int commands_KICK(char *channel, char *user) {
-    return 0;
+int commands_KICK(char *user, struct Client *client) {
+    if (client->is_op != 1) {
+        return -15;
+    }
 }
 
 int commands_PRIVMSG(char *receiver, char *message) {

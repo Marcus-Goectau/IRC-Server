@@ -25,7 +25,7 @@ int commands_TOPIC(char *topic, struct Client *client);
 int commands_NAMES(char *channel, struct Client *client);
 int commands_LIST(struct Client *client);
 int commands_INVITE(char *nick_name, char *channel);
-int commands_KICK(char *channel, char *user);
+int commands_KICK(char *user, struct Client *client);
 int commands_PRIVMSG(char *receiver, char *message);
 
 #endif //IRC_COMMANDS_H

@@ -22,6 +22,7 @@ struct Channel {
 };
 
 struct Channel* channel_create(const char *name, const char *topic);
+struct Channel* channel_findChannel(char *name, struct LinkedListNode *head);
 
 struct LinkedListNode *channel_list_head;
 int channel_num_channels;

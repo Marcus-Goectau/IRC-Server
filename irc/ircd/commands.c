@@ -51,7 +51,10 @@ int commands_getCommand(char *command, struct Client *client) {
     } else if (strncmp(command, "topic", 5) == 0) {
         strcpy(arguments, command + 6);
         return commands_TOPIC(arguments, client);
-    }else {
+    } else if (strncmp(command, "names", 5) == 0){
+        strcpy(arguments, command + 6);
+        return commands_NAMES(arguments, client);
+    } else {
         return -1;
     }
 }
@@ -139,7 +142,7 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
             write(client->client_fd, "You do not have OP privileges to change the topic.\n", 100);
         } else if (command_status == -12) {
             sprintf(buffer,
-                    "ERR_NOROPIC: %s tried to change a channel topic, but the channel topic can't be blank.\n",
+                    "ERR_NOTOPIC: %s tried to change a channel topic, but the channel topic can't be blank.\n",
                     client->nick);
             logger_write(buffer);
             printf(buffer);
@@ -151,6 +154,13 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
             logger_write(buffer);
             printf(buffer);
             write(client->client_fd, "You can't change the topic of a channel you are not in.\n", 100);
+        } else if (command_status == -14) {
+            sprintf(buffer,
+                    "ERR_NOCHANNEL: %s tried to list the users in a channel that doesnt exist.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf(buffer);
+            write(client->client_fd, "There is no channel with that name.\n", 100);
         }
     }
 }
@@ -317,10 +327,10 @@ int commands_JOIN(char *channel, struct Client *client) {
             struct LinkedListNode *node = current_channel->subscriber_list_head;
             sprintf(channel_message, "%s has joined the channel!\n", client->nick);
             while (node != NULL) {
-                usleep(1000);
+                usleep(2000);
                 current_client = node->data;
                 bzero(user, 256);
-                sprintf(user, "%s\n", current_client->nick);
+                sprintf(user, "%s", current_client->nick);
                 write(client->client_fd, user, 256);
                 if (current_client->client_fd != client->client_fd) {
                     write(current_client->client_fd, channel_message, 256); // write join message to other clients in channel
@@ -419,7 +429,57 @@ int commands_TOPIC(char *topic, struct Client *client) {
     return 0;
 }
 
+/// lists all the names on a channel, or all visible clients on the server if no channel is given
+/// \param channel: channel to display users of
+/// \param client: client requesting the names to be shown
+/// \return: exit code
 int commands_NAMES(char *channel, struct Client *client) {
+    channel[strlen(channel) - 1] = '\0';
+    struct LinkedListNode *channel_node, *client_node;
+    struct Channel *current_channel;
+    struct Client *current_client;
+    channel_node = channel_list_head;
+    char channel_label[100];
+    char client_label[100];
+    if (strcmp(channel, "") == 0) { // list all visible clients on server if no channel name is given
+        while (channel_node != NULL) {  // write all channels
+            usleep(2000);
+            current_channel = channel_node->data;
+            bzero(channel_label, 100);
+            sprintf(channel_label, "Users in channel %s:", current_channel->name);
+            write(client->client_fd, channel_label, 100);
+            client_node = current_channel->subscriber_list_head;
+            while (client_node != NULL) {   // write all clients in each channel
+                usleep(2000);
+                current_client = client_node->data;
+                bzero(client_label, 100);
+                sprintf(client_label, "%s", current_client->nick);
+                write(client->client_fd, client_label, 100);
+                client_node = client_node->next;
+            }
+            channel_node = channel_node->next;
+        }
+        return 0;
+    }
+
+    current_channel = channel_findChannel(channel, channel_list_head);
+    if (current_channel == NULL) {
+        return -14;
+    }
+
+    client_node = current_channel->subscriber_list_head;
+    bzero(channel_label, 100);
+    sprintf(channel_label, "Users in channel %s:", current_channel->name);
+    write(client->client_fd, channel_label, 100);
+    while (client_node != NULL) {
+        usleep(2000);
+        current_client = client_node->data;
+        bzero(client_label, 100);
+        sprintf(client_label, "%s", current_client->nick);
+        write(client->client_fd, client_label, 100);
+        client_node = client_node->next;
+    }
+
     return 0;
 }
 

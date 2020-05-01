@@ -54,6 +54,8 @@ int commands_getCommand(char *command, struct Client *client) {
     } else if (strncmp(command, "names", 5) == 0){
         strcpy(arguments, command + 6);
         return commands_NAMES(arguments, client);
+    } else if (strncmp(command, "list", 4) == 0) {
+        return commands_LIST(client);
     } else {
         return -1;
     }
@@ -68,98 +70,98 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
         if (command_status == -1) {
             sprintf(buffer, "ERROR: could not parse command from %s\n", client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "Invalid command format. Use /help for command help.\n", 50);
         } else if (command_status == -2) {
             sprintf(buffer,
                     "ERR_NOOPERHOST: %s tried to raise the op status of another client, but does not have privileges to do so.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "You need to have op status to raise the op status of another user.\n", 70);
         } else if (command_status == -3) {
             sprintf(buffer,
                     "ERR_NONICK: %s tried to raise the op status of another client, but a client with the input nick name does not exist.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "There is no user with that nick name.\n", 40);
         } else if (command_status == -4) {
             sprintf(buffer,
                    "ERR_INVALIDCHANFORMAT: %s tried to create a channel, but the channel name did not start with \'#\'.\n",
                    client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "Channel names must start with \'#\' and contain no spaces.\n", 70);
         } else if (command_status == -5) {
             sprintf(buffer,
                     "ERR_INCHAN: %s tried to join a channel that they are already in.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "You cannot join a channel you are already in.\n", 50);
         } else if (command_status == -6) {
             sprintf(buffer,
                     "ERR_INCHAN: %s tried to join a channel, but are they already in a channel.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "You must leave your current channel before joining another one. (use /part)\n", 100);
         } else if (command_status == -7) {
             sprintf(buffer,
                     "ERR_NOSUCHCHANNEL: %s tried to leave a channel, but are they are not in a channel.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "You are not in a channel.\n", 100);
         } else if (command_status == -8) {
             sprintf(buffer,
                     "ERR_NICKNAMEINUSE: %s tried to change their nick name, but the requested name was already taken.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "That nick name is already in use.\n", 100);
         } else if (command_status == -9) {
             sprintf(buffer,
                     "ERR_ALREADYREGISTERED: %s tried to change their full name, but the requested name was already taken.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "That full name is already in use.\n", 100);
         } else if (command_status == -10) {
             sprintf(buffer,
                     "ERR_NOSUCHCHANNEL: %s tried to leave a channel they aren't in.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "You are not in a channel with that name.\n", 100);
         } else if (command_status == -11) {
             sprintf(buffer,
                     "ERR_CHANOPRIVSNEEDED: %s tried to change a channel topic, but they are not an op.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "You do not have OP privileges to change the topic.\n", 100);
         } else if (command_status == -12) {
             sprintf(buffer,
                     "ERR_NOTOPIC: %s tried to change a channel topic, but the channel topic can't be blank.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "The channel topic cannot be blank.\n", 100);
         } else if (command_status == -13) {
             sprintf(buffer,
                     "ERR_NOTONCHANNEL: %s tried to change a channel topic, but they are not on that channel.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "You can't change the topic of a channel you are not in.\n", 100);
         } else if (command_status == -14) {
             sprintf(buffer,
                     "ERR_NOCHANNEL: %s tried to list the users in a channel that doesnt exist.\n",
                     client->nick);
             logger_write(buffer);
-            printf(buffer);
+            printf("%s", buffer);
             write(client->client_fd, "There is no channel with that name.\n", 100);
         }
     }
@@ -421,7 +423,7 @@ int commands_TOPIC(char *topic, struct Client *client) {
     struct Client *current_client;
     while(node != NULL) {
         current_client = node->data;
-        write(current_client->client_fd, channel_message, 256);
+        write(current_client->client_fd, channel_message, 255);
         node = node->next;
     }
     fprintf(stdout, "%s\n", channel_message);
@@ -483,7 +485,21 @@ int commands_NAMES(char *channel, struct Client *client) {
     return 0;
 }
 
+/// lists all channels and their topics
+/// \param client: client requesting the list of cahnnels
+/// \return: exit code
 int commands_LIST(struct Client *client) {
+    char channel_label[256];
+    struct LinkedListNode *node = channel_list_head;
+    struct Channel *current_channel;
+    while (node != NULL) {
+        usleep(2000);
+        current_channel = node->data;
+        bzero(channel_label, 256);
+        sprintf(channel_label, "Channel: %s    Topic: \"%s\"", current_channel->name, current_channel->topic);
+        write(client->client_fd, channel_label, 256);
+        node = node->next;
+    }
     return 0;
 }
 

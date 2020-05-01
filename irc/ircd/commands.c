@@ -173,6 +173,34 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
             logger_write(buffer);
             printf("%s", buffer);
             write(client->client_fd, "You need OP permissions to kick another user.\n", 100);
+        } else if (command_status == -16) {
+            sprintf(buffer,
+                    "ERR_NOTONCHANNEL: %s tried to kick a user from a channel, but they are not in a channel.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf("%s", buffer);
+            write(client->client_fd, "You need to be in a channel to kick someone.\n", 100);
+        } else if (command_status == -17) {
+            sprintf(buffer,
+                    "ERR_NOSUCHUSER: %s tried to kick a user from a channel, but the entered user is not on the channel.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf("%s", buffer);
+            write(client->client_fd, "There is no user in the channel with that name.\n", 100);
+        } else if (command_status == -18) {
+            sprintf(buffer,
+                    "ERR_NONICKNAMEGIVEN: %s tried to change their nickname, but did not enter one.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf("%s", buffer);
+            write(client->client_fd, "Your nick name cannot be blank.\n", 100);
+        } else if (command_status == -19) {
+            sprintf(buffer,
+                    "ERR_NOFULLNAMEGIVEN: %s tried to change their full name, but did not enter one.\n",
+                    client->nick);
+            logger_write(buffer);
+            printf("%s", buffer);
+            write(client->client_fd, "Your full name cannot be blank.\n", 100);
         }
     }
 }
@@ -183,11 +211,15 @@ void commands_checkCommandStatus(int command_status, struct Client *client) {
 /// \return: exit code
 int commands_NICK(char *nick, struct Client *client) {
     nick[strlen(nick) - 1] = '\0';
+    if (strcmp(nick, "") == 0) {
+        return -18;
+    }
     struct LinkedListNode *node = client_list_head;
     struct Client *current_client;
     while (node != NULL) {
         current_client = node->data;
         if (strcmp(current_client->nick, nick) == 0) {
+            write(client->client_fd, "That nick name is already taken.\n", 50);
             return -8;
         }
         node = node->next;
@@ -203,11 +235,15 @@ int commands_NICK(char *nick, struct Client *client) {
 /// \return: exit code
 int commands_USER(char *full_name, struct Client *client) {
     full_name[strlen(full_name) - 1] = '\0';
+    if (strcmp(full_name, "") == 0) {
+        return -19;
+    }
     struct LinkedListNode *node = client_list_head;
     struct Client *current_client;
     while (node != NULL) {
         current_client = node->data;
         if (strcmp(current_client->full_name, full_name) == 0) {
+            write(client->client_fd, "That full name is already taken.", 50);
             return -9;
         }
         node = node->next;
@@ -427,7 +463,7 @@ int commands_TOPIC(char *topic, struct Client *client) {
     }
     char channel_message[256];
     sprintf(channel_message, "%s has changed the channel topic to: \"%s\"\n\n", client->nick, topic);
-    client->channel->topic = topic;
+    strcpy(client->channel->topic, topic);
     struct Channel *current_channel = client->channel;
     struct LinkedListNode *node = current_channel->subscriber_list_head;
     struct Client *current_client;
@@ -517,10 +553,37 @@ int commands_INVITE(char *nick_name, char *channel) {
     return 0;
 }
 
+/// kicks another client from the channel
+/// \param user: the user to be kicked
+/// \param client: client perfomrming the kick command
+/// \return: exit code
 int commands_KICK(char *user, struct Client *client) {
     if (client->is_op != 1) {
         return -15;
     }
+    if (client->channel == NULL) {
+        return -16;
+    }
+    struct Client *kicked_client = client_handler_findClient(user, client->channel->subscriber_list_head);
+    if (kicked_client == NULL) {
+        return -17;
+    }
+    kicked_client->channel = NULL;
+    struct LinkedListNode *client_node = malloc(sizeof(struct LinkedListNode));
+    client_node->data = kicked_client;
+    linked_list_delete(&client->channel->subscriber_list_head, client_node);
+    write(kicked_client->client_fd, "You have been kicked from the channel.\n", 50);
+    char kick_message[256];
+    struct LinkedListNode *node = client->channel->subscriber_list_head;
+    struct Client *current_client;
+    while (node != NULL) {
+        current_client = node->data;
+        bzero(kick_message, 255);
+        sprintf(kick_message, "%s has been kicked from the channel.\n", kicked_client->nick);
+        write(current_client->client_fd, kick_message,    100);
+        node = node->next;
+    }
+    return 0;
 }
 
 int commands_PRIVMSG(char *receiver, char *message) {

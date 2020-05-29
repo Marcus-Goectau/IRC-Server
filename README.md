@@ -3,7 +3,7 @@
 This IRC server/client project is compliant with RFC 1459 standards. Documentation can be found
 at the following link: https://tools.ietf.org/html/rfc1459
 
-This project includes both client and server code that can be run in parallel. Running an instance of the server allows for multiple clients to search for, list, create, and join channels on the server. Clients can change their nick names and chat with others in each channel they join.
+This project includes both client and server code that can be run in parallel. Running an instance of the server allows for multiple clients instances to be run and to search for, list, create, and join channels on the server. Clients can change their nick names and chat with others in each channel they join.
 
 # Notes about Server Commands
 

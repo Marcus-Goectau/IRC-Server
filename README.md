@@ -11,8 +11,3 @@ This project includes both client and server code that can be run in parallel. R
 *  Commands that should take more than one argument are still being worked on.
 *  Currently, all users join with a default nick and full name i.e "Client x". These names can then be changed by using the /nick (name) and /user (name) commands.
 *  Although RFC protocol allows for the joing of multiple channels simultaneously, due to current minimal UI, clients must leave channels before joining another.
-
-# Current Bug(s)
-
-*  Getting first initial client to connect to running server is spotty and sometimes takes multiple server reboots to get the initial client connected (Once initial client is connected, all subsequent clients easily connect).
-*  Clients leaving and rejoining the server results in relatively unstable message passing afterwards (server crashes due to seg faults).
